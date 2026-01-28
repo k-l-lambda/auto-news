@@ -162,6 +162,7 @@ cython_debug/
 
 # Workspace
 workspace/**
+docker/workspace/
 requirements-local.txt
 
 # Migration folders

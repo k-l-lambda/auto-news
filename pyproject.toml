@@ -29,8 +29,8 @@ dependencies = [
     "openai-whisper",
     "pillow",
     "pinecone-client",
-    "ag2==0.2.2",
-    "pymilvus>=2.4.*",
+    "ag2>=0.5.0",
+    "pymilvus>=2.4",
     "pymupdf",
     "python-dotenv",
     "python-snappy",
@@ -49,6 +49,10 @@ dependencies = [
     "validators",
     "youtube-transcript-api",
     "yt-dlp",
+    # Web collector dependencies
+    "playwright>=1.40.0",
+    "trafilatura>=1.6.0",
+    "lxml>=4.9.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.9"
