@@ -25,6 +25,29 @@ Port Taranis AI's mature collector patterns to Auto-News while preserving Auto-N
 
 ---
 
+## Progress Tracking
+
+| Task | Status | Notes |
+|------|--------|-------|
+| **Phase 1: Core Infrastructure** | | |
+| 1.1 WebCollectorBase class | ✅ Done | `src/ops_web_base.py` |
+| 1.2 PlaywrightManager class | ✅ Done | `src/playwright_manager.py` |
+| 1.3 Add dependencies | ✅ Done | `pyproject.toml` (playwright, trafilatura, lxml) |
+| **Phase 3: Web Collector** | | |
+| 3.1 OperatorWeb class | ✅ Done | `src/ops_web.py` |
+| 3.2 Notion Web database | ✅ Done | Query method in ops_web.py |
+| **Phase 4: Pipeline Integration** | | |
+| 4.1 Update af_pull.py | ✅ Done | Added Web source |
+| 4.2 Update af_save.py | ✅ Done | Added process_web() |
+| 4.3 Notion ToRead method | ✅ Done | `createDatabaseItem_ToRead_Web` in notion.py |
+| **Phase 2: RSS Enhancement** | | |
+| 2.1 Upgrade OperatorRSS | ⏳ Pending | Browser mode, XPath |
+| **Phase 5: Advanced** | | |
+| 5.1 MISP Collector | ⏳ Optional | |
+| 5.2 Word List Filtering | ⏳ Optional | |
+
+---
+
 ## Implementation Plan
 
 > **Execution Order:** Phase 1 → Phase 3 → Phase 4 → Phase 2 → Phase 5

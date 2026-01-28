@@ -9,6 +9,7 @@ from ops_article import OperatorArticle
 from ops_youtube import OperatorYoutube
 from ops_rss import OperatorRSS
 from ops_reddit import OperatorReddit
+from ops_web import OperatorWeb
 import utils
 
 
@@ -24,7 +25,7 @@ parser.add_argument("--job-id", help="job-id",
 parser.add_argument("--data-folder", help="data folder to save",
                     default="./data")
 parser.add_argument("--sources", help="sources to pull, comma separated",
-                    default=os.getenv("CONTENT_SOURCES", "Twitter,Reddit,Article,Youtube,RSS"))
+                    default=os.getenv("CONTENT_SOURCES", "Twitter,Reddit,Article,Youtube,RSS,Web"))
 parser.add_argument("--pulling-count", help="pulling count",
                     default=3)
 parser.add_argument("--pulling-interval", help="pulling interval (s)",
@@ -139,6 +140,27 @@ def save_reddit(args, op, data):
     op.save2json(args.data_folder, args.run_id, "reddit.json", data)
 
 
+def pull_web(args, op):
+    """
+    Pull from Web sources
+    """
+    print("######################################################")
+    print("# Pull from Web")
+    print("######################################################")
+
+    def run():
+        return op.pull()
+
+    return utils.prun(run) or {}
+
+
+def save_web(args, op, data):
+    print("######################################################")
+    print("# Save Web articles to json file")
+    print("######################################################")
+    op.save2json(args.data_folder, args.run_id, "web.json", data)
+
+
 def run(args):
     sources = args.sources.split(",")
     print(f"Sources: {sources}")
@@ -170,6 +192,11 @@ def run(args):
             op = OperatorReddit()
             data = pull_reddit(args, op)
             save_reddit(args, op, data)
+
+        elif source == "Web":
+            op = OperatorWeb()
+            data = pull_web(args, op)
+            save_web(args, op, data)
 
 
 if __name__ == "__main__":

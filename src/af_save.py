@@ -10,6 +10,7 @@ from ops_article import OperatorArticle
 from ops_youtube import OperatorYoutube
 from ops_rss import OperatorRSS
 from ops_reddit import OperatorReddit
+from ops_web import OperatorWeb
 
 
 parser = argparse.ArgumentParser()
@@ -24,7 +25,7 @@ parser.add_argument("--job-id", help="job-id",
 parser.add_argument("--data-folder", help="data folder to save",
                     default="./data")
 parser.add_argument("--sources", help="sources to pull, comma separated",
-                    default=os.getenv("CONTENT_SOURCES", "Twitter,Reddit,Article,Youtube,RSS"))
+                    default=os.getenv("CONTENT_SOURCES", "Twitter,Reddit,Article,Youtube,RSS,Web"))
 parser.add_argument("--targets", help="targets to push, comma separated",
                     default="notion")
 parser.add_argument("--topics-top-k", help="pick top-k topics to push",
@@ -219,6 +220,48 @@ def process_reddit(args):
         data_summarized, data_ranked, pushed_stats)
 
 
+def process_web(args):
+    """
+    Process Web collected articles:
+    - Dedup using Milvus
+    - Summarize using LLM
+    - Rank using LLM
+    - Push to Notion ToRead
+    """
+    print("#####################################################")
+    print(f"# Process Web, dedup: {args.dedup}")
+    print("#####################################################")
+    op = OperatorWeb()
+
+    data = op.readFromJson(args.data_folder, args.run_id, "web.json")
+    if not data:
+        print("[Web] No data to process")
+        return []
+
+    data_deduped = data
+    need_dedup = utils.str2bool(args.dedup)
+    if need_dedup:
+        data_deduped = op.dedup(data, target="toread")
+    else:
+        data_deduped = {k: v for k, v in data.items()}
+
+    data_summarized = op.summarize(data_deduped)
+    data_ranked = op.rank(data_summarized)
+
+    targets = args.targets.split(",")
+    if "notion" in targets:
+        op.push(data_ranked, targets)
+
+    return op.createStats(
+        "Web",
+        "",
+        data,
+        data_deduped=data_deduped,
+        data_summarized=data_summarized,
+        data_ranked=data_ranked,
+        pushed_stats={})
+
+
 def run(args):
     sources = args.sources.split(",")
     stats = []
@@ -241,6 +284,9 @@ def run(args):
 
         elif source == "Reddit":
             stat = process_reddit(args)
+
+        elif source == "Web":
+            stat = process_web(args)
 
         stats.extend(stat)
 

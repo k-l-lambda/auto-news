@@ -1878,6 +1878,119 @@ class NotionAgent:
 
         return new_page
 
+    def createDatabaseItem_ToRead_Web(
+        self,
+        database_id,
+        page,
+    ):
+        """
+        Create ToRead database item for Web collector.
+
+        Args:
+            database_id: Target ToRead database ID
+            page: Page dict with keys: title, url, summary, content, category, ranking, list_name, author
+        """
+        # Build properties
+        title = page.get("title", "")[:100]  # Notion title limit
+        url = page.get("url", "")
+        summary = page.get("summary", "")
+        category = page.get("category", "")
+        ranking = page.get("ranking", 3)
+        list_name = page.get("list_name", "Web")
+        author = page.get("author", "")
+
+        properties = {
+            "Name": {
+                "title": [
+                    {
+                        "text": {
+                            "content": title,
+                        }
+                    }
+                ]
+            },
+            "Source": {
+                "select": {
+                    "name": "Web",
+                }
+            },
+            "Rating": {
+                "number": ranking
+            },
+            "List": {
+                "multi_select": [{"name": list_name}]
+            },
+        }
+
+        if category:
+            properties["Category"] = {
+                "multi_select": [{"name": category}]
+            }
+
+        # Build blocks (page content)
+        blocks = []
+
+        # Add summary as callout
+        if summary:
+            blocks.append({
+                "object": "block",
+                "type": "callout",
+                "callout": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": summary[:2000]  # Limit length
+                            }
+                        }
+                    ],
+                    "icon": {
+                        "emoji": "📝"
+                    }
+                }
+            })
+
+        # Add author if present
+        if author:
+            blocks.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": f"Author: {author}"
+                            },
+                            "annotations": {
+                                "italic": True
+                            }
+                        }
+                    ]
+                }
+            })
+
+        # Add original article link
+        if url:
+            blocks.append({
+                "object": "block",
+                "type": "bookmark",
+                "bookmark": {
+                    "url": url
+                }
+            })
+
+        print(f"[Notion.Web] Creating item: {title[:50]}...")
+
+        # Create the page
+        new_page = self.api.pages.create(
+            parent={"database_id": database_id},
+            properties=properties,
+            children=blocks
+        )
+
+        return new_page
+
     def createPageComment(
         self,
         page_id,
