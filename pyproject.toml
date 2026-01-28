@@ -25,7 +25,7 @@ dependencies = [
     "minio",
     "miniopy-async",
     "mysql-connector-python>=8.2.0",
-    "notion-client",
+    "notion-client>=2.2,<2.3",
     "openai",
     "openai-whisper",
     "pillow",
