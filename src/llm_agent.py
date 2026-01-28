@@ -1,20 +1,22 @@
 import os
 
 import httpx
-from langchain import LLMChain
-from langchain.text_splitter import (
-    RecursiveCharacterTextSplitter
-)
-from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
+import tiktoken
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_openai import ChatOpenAI
 from langchain.chains.summarize import load_summarize_chain
 from langchain_community.chat_models import ChatOllama
 from langchain_community.document_loaders import YoutubeLoader
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.document_loaders import ArxivLoader
-from langchain.utilities.arxiv import ArxivAPIWrapper
+from langchain_community.utilities import ArxivAPIWrapper
 from langchain_google_genai import ChatGoogleGenerativeAI
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 
 import llm_prompts
 
@@ -235,14 +237,19 @@ class LLMAgentBase:
 
         self.llm = llm
 
-        # Create a default chain
+        # Create a default chain using RunnableSequence pattern
         if create_default_chain:
-            self.llmchain = LLMChain(llm=self.llm, prompt=self.prompt_tpl)
+            self.llmchain = self.prompt_tpl | self.llm | StrOutputParser()
 
         print(f"LLM chain initalized, provider: {provider}, model_name: {model_name}, temperature: {temperature}")
 
     def get_num_tokens(self, text):
-        return self.llm.get_num_tokens(text)
+        """Estimate token count using tiktoken."""
+        try:
+            encoding = tiktoken.encoding_for_model(self.model_name)
+        except KeyError:
+            encoding = tiktoken.get_encoding("cl100k_base")
+        return len(encoding.encode(text))
 
 
 class LLMAgentCategoryAndRanking(LLMAgentBase):
@@ -268,7 +275,7 @@ class LLMAgentCategoryAndRanking(LLMAgentBase):
         tokens = self.get_num_tokens(text)
         print(f"[LLM] Category and Ranking, number of tokens: {tokens}")
 
-        response = self.llmchain.run(text)
+        response = self.llmchain.invoke({"content": text})
         return response
 
 
@@ -352,7 +359,8 @@ class LLMAgentSummary(LLMAgentBase):
         docs = text_splitter.create_documents([text])
         print(f"[LLM] number of splitted docs: {len(docs)}")
 
-        summary_resp = self.llmchain.run(docs)
+        result = self.llmchain.invoke({"input_documents": docs})
+        summary_resp = result.get("output_text", "")
         return summary_resp
 
 
@@ -371,7 +379,7 @@ class LLMAgentJournal(LLMAgentBase):
         tokens = self.get_num_tokens(text)
         print(f"[LLMAgentJournal] number of tokens: {tokens}")
 
-        response = self.llmchain.run(text)
+        response = self.llmchain.invoke({"content": text})
         return response
 
 
@@ -393,7 +401,7 @@ class LLMAgentTranslation(LLMAgentBase):
         tokens = self.get_num_tokens(text)
         print(f"[LLMAgentTranslation] number of tokens: {tokens}")
 
-        response = self.llmchain.run(text)
+        response = self.llmchain.invoke({"content": text})
         return response
 
 
@@ -409,7 +417,7 @@ class LLMAgentGeneric(LLMAgentBase):
         tokens = self.get_num_tokens(text)
         print(f"[LLMAgentGeneric] number of tokens: {tokens}")
 
-        response = self.llmchain.run(text)
+        response = self.llmchain.invoke({"content": text})
         return response
 
 
