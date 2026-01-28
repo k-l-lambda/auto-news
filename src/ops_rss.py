@@ -12,7 +12,7 @@ from llm_agent import (
     LLMAgentSummary,
 )
 import utils
-from ops_base import OperatorBase
+from ops_web_base import WebCollectorBase
 from db_cli import DBClient
 from ops_milvus import OperatorMilvus
 from ops_notion import OperatorNotion
@@ -20,7 +20,7 @@ from ops_notion import OperatorNotion
 import feedparser
 
 
-class OperatorRSS(OperatorBase):
+class OperatorRSS(WebCollectorBase):
     """
     An Operator to handle:
     - pulling data from source
@@ -32,11 +32,29 @@ class OperatorRSS(OperatorBase):
     - publish
     """
 
-    def _fetch_articles(self, list_name, feed_url, count=3):
+    def _fetch_articles(self, list_name, feed_url, count=3, rss_config=None):
         """
-        Fetch artciles from feed url (pull last n)
+        Fetch articles from feed url (pull last n)
+
+        Args:
+            list_name: Name of the RSS feed
+            feed_url: URL of the RSS feed
+            count: Maximum number of articles to fetch
+            rss_config: Optional dict with enhanced settings:
+                - browser_mode: Use Playwright for JS rendering
+                - xpath: XPath for content extraction
+                - fetch_full_article: Use Trafilatura for full content
+                - proxy: Proxy server URL
         """
         print(f"[fetch_articles] list_name: {list_name}, feed_url: {feed_url}, count: {count}")
+
+        # Configure web collector if enhanced settings provided
+        if rss_config:
+            self.configure_from_source({
+                "browser_mode": rss_config.get("browser_mode", False),
+                "xpath": rss_config.get("xpath", ""),
+                "proxy": rss_config.get("proxy", ""),
+            })
 
         # Parse the RSS feed
         feed = feedparser.parse(feed_url)
@@ -55,8 +73,8 @@ class OperatorRSS(OperatorBase):
             link = entry.link
 
             # Example: Thu, 03 Mar 2022 08:00:00 GMT
-            published = entry.published
-            published_parsed = entry.published_parsed
+            published = entry.get("published", "")
+            published_parsed = entry.get("published_parsed")
             published_key = published
 
             # Convert above struct_time object to datetime
@@ -75,7 +93,23 @@ class OperatorRSS(OperatorBase):
             hash_key = f"{list_name}_{title}_{published_key}".encode('utf-8')
             article_id = utils.hashcode_md5(hash_key)
 
-            print(f"[fetch_articles] pulled_cnt: {pulled_cnt}, list_name: {list_name}, title: {title}, published: {created_time}, article_id: {article_id}, hash_key: [{hash_key}]")
+            print(f"[fetch_articles] pulled_cnt: {pulled_cnt}, list_name: {list_name}, title: {title}, published: {created_time}, article_id: {article_id}")
+
+            # Get content - check if full article fetch is enabled
+            content = ""
+            summary = entry.get("summary") or ""
+
+            if rss_config and rss_config.get("fetch_full_article"):
+                print(f"[fetch_articles] Fetching full article from: {link}")
+                try:
+                    xpath = rss_config.get("xpath", "")
+                    web_content = self.extract_web_content(link, xpath)
+                    content = web_content.get("content", "")
+                    if content:
+                        print(f"[fetch_articles] Extracted {len(content)} chars from article")
+                except Exception as e:
+                    print(f"[fetch_articles] Failed to fetch full article: {e}")
+                    content = ""
 
             # Create a dictionary representing an article
             article = {
@@ -85,8 +119,8 @@ class OperatorRSS(OperatorBase):
                 'title': title,
                 'url': link,
                 'created_time': created_time,
-                "summary": entry.get("summary") or "",
-                "content": "",
+                "summary": summary,
+                "content": content,
                 "tags": entry.get("tags") or [],
                 "published": published,
                 "published_key": published_key,
@@ -94,6 +128,9 @@ class OperatorRSS(OperatorBase):
 
             # Add the article to the list
             articles.append(article)
+
+        # Cleanup Playwright if used
+        self.stop_playwright()
 
         return articles
 
@@ -141,14 +178,32 @@ class OperatorRSS(OperatorBase):
         for rss in rss_list:
             name = rss["name"]
             url = rss["url"]
-            print(f"Fetching RSS: {name}, url: {url}")
 
-            articles = self._fetch_articles(name, url, count=3)
-            print(f"articles: {articles}")
+            # Build enhanced config from Notion properties
+            rss_config = {
+                "browser_mode": rss.get("browser_mode", False),
+                "xpath": rss.get("xpath", ""),
+                "fetch_full_article": rss.get("fetch_full_article", False),
+                "proxy": rss.get("proxy", ""),
+            }
+
+            has_enhanced = any([
+                rss_config["browser_mode"],
+                rss_config["xpath"],
+                rss_config["fetch_full_article"],
+                rss_config["proxy"]
+            ])
+
+            if has_enhanced:
+                print(f"Fetching RSS (enhanced): {name}, url: {url}, config: {rss_config}")
+            else:
+                print(f"Fetching RSS: {name}, url: {url}")
+
+            articles = self._fetch_articles(name, url, count=3, rss_config=rss_config if has_enhanced else None)
+            print(f"Fetched {len(articles)} articles")
 
             for article in articles:
                 page_id = article["id"]
-
                 pages[page_id] = article
 
         return pages

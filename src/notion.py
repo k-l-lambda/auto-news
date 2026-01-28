@@ -317,12 +317,37 @@ class NotionAgent:
         for page in pages:
             print(f"result: page id: {page['id']}")
             page_id = page["id"]
+            props = page["properties"]
+
+            # Required fields
+            name = ""
+            if props.get("Name", {}).get("title"):
+                name = props["Name"]["title"][0]["text"]["content"]
+
+            url = props.get("URL", {}).get("url", "")
+
+            # Optional enhanced fields (for Taranis patterns)
+            xpath = ""
+            if props.get("XPath", {}).get("rich_text"):
+                xpath = props["XPath"]["rich_text"][0]["text"]["content"]
+
+            browser_mode = props.get("Browser Mode", {}).get("checkbox", False)
+
+            fetch_full_article = props.get("Fetch Full Article", {}).get("checkbox", False)
+
+            proxy = ""
+            if props.get("Proxy", {}).get("rich_text"):
+                proxy = props["Proxy"]["rich_text"][0]["text"]["content"]
 
             extracted_pages.append({
                 "page_id": page_id,
                 "database_id": database_id,
-                "name": page["properties"]["Name"]["title"][0]["text"]["content"],
-                "url": page["properties"]["URL"]["url"],
+                "name": name,
+                "url": url,
+                "xpath": xpath,
+                "browser_mode": browser_mode,
+                "fetch_full_article": fetch_full_article,
+                "proxy": proxy,
                 "created_time": page["created_time"],
                 "last_edited_time": page["last_edited_time"],
             })

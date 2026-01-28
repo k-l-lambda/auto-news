@@ -41,7 +41,7 @@ Port Taranis AI's mature collector patterns to Auto-News while preserving Auto-N
 | 4.2 Update af_save.py | ✅ Done | Added process_web() |
 | 4.3 Notion ToRead method | ✅ Done | `createDatabaseItem_ToRead_Web` in notion.py |
 | **Phase 2: RSS Enhancement** | | |
-| 2.1 Upgrade OperatorRSS | ⏳ Pending | Browser mode, XPath |
+| 2.1 Upgrade OperatorRSS | ✅ Done | Browser mode, XPath, Full article |
 | **Phase 5: Advanced** | | |
 | 5.1 MISP Collector | ⏳ Optional | |
 | 5.2 Word List Filtering | ⏳ Optional | |
