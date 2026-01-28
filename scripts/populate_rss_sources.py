@@ -67,7 +67,8 @@ def main():
             "Browser Mode": {"checkbox": {}},
             "Fetch Full Article": {"checkbox": {}},
             "Proxy": {"rich_text": {}},
-            "Notes": {"rich_text": {}}
+            "Notes": {"rich_text": {}},
+            "Created time": {"created_time": {}}
         }
     }
 
