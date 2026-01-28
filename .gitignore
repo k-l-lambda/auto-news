@@ -169,3 +169,6 @@ requirements-local.txt
 
 # helm
 helm/charts
+
+*.local.*
+*.local
