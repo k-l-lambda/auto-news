@@ -541,10 +541,18 @@ class OperatorRSS(WebCollectorBase):
 
                         print(f"Pushing page, title: {title}")
 
-                        topics_topk = [x["term"].replace(",", " ")[:20] for x in tags]
-                        topics_topk = topics_topk[:topk]
+                        # Use ranked topics if available, fallback to RSS tags
+                        if page.get("__topics"):
+                            topics_topk = [x[0][:20] for x in page["__topics"]][:topk]
+                        else:
+                            topics_topk = [x["term"].replace(",", " ")[:20] for x in tags][:topk]
 
-                        categories_topk = []
+                        # Use ranked categories if available
+                        if page.get("__categories"):
+                            categories_topk = [x[0][:20] for x in page["__categories"]][:topk]
+                        else:
+                            categories_topk = []
+
                         rating = page.get("__rate") or -1
 
                         notion_agent.createDatabaseItem_ToRead_RSS(
