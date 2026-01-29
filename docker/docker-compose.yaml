@@ -57,9 +57,13 @@ x-airflow-common:
 
   networks:
     - bot_network
+  extra_hosts:
+    - "host.docker.internal:172.18.0.1"
   privileged: true
   environment:
     &airflow-common-env
+    TZ: Asia/Singapore
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Singapore
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     # For backward compatibility, with Airflow <2.3

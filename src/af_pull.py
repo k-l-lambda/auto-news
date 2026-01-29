@@ -9,7 +9,10 @@ from ops_article import OperatorArticle
 from ops_youtube import OperatorYoutube
 from ops_rss import OperatorRSS
 from ops_reddit import OperatorReddit
-from ops_web import OperatorWeb
+try:
+    from ops_web import OperatorWeb
+except ImportError:
+    OperatorWeb = None
 import utils
 
 
@@ -165,38 +168,58 @@ def run(args):
     sources = args.sources.split(",")
     print(f"Sources: {sources}")
 
+    failed_sources = []
+    success_sources = []
+
     for source in sources:
         print(f"Pulling from source: {source} ...")
 
-        if source == "Twitter":
-            op = OperatorTwitter()
-            data = pull_twitter(args, op)
-            save_twitter(args, op, data)
+        try:
+            if source == "Twitter":
+                op = OperatorTwitter()
+                data = pull_twitter(args, op)
+                save_twitter(args, op, data)
 
-        elif source == "Article":
-            op = OperatorArticle()
-            data = pull_article(args, op)
-            save_article(args, op, data)
+            elif source == "Article":
+                op = OperatorArticle()
+                data = pull_article(args, op)
+                save_article(args, op, data)
 
-        elif source == "Youtube":
-            op = OperatorYoutube()
-            data = pull_youtube(args, op)
-            save_youtube(args, op, data)
+            elif source == "Youtube":
+                op = OperatorYoutube()
+                data = pull_youtube(args, op)
+                save_youtube(args, op, data)
 
-        elif source == "RSS":
-            op = OperatorRSS()
-            data = pull_rss(args, op)
-            save_rss(args, op, data)
+            elif source == "RSS":
+                op = OperatorRSS()
+                data = pull_rss(args, op)
+                save_rss(args, op, data)
 
-        elif source == "Reddit":
-            op = OperatorReddit()
-            data = pull_reddit(args, op)
-            save_reddit(args, op, data)
+            elif source == "Reddit":
+                op = OperatorReddit()
+                data = pull_reddit(args, op)
+                save_reddit(args, op, data)
 
-        elif source == "Web":
-            op = OperatorWeb()
-            data = pull_web(args, op)
-            save_web(args, op, data)
+            elif source == "Web":
+                if OperatorWeb is None:
+                    print(f"[WARN] Web source skipped - ops_web module not available (missing trafilatura)")
+                    continue
+                op = OperatorWeb()
+                data = pull_web(args, op)
+                save_web(args, op, data)
+
+            success_sources.append(source)
+
+        except Exception as e:
+            print(f"[ERROR] Failed to pull from {source}: {e}")
+            failed_sources.append(source)
+            # Continue with next source instead of stopping
+
+    print("######################################################")
+    print("# Pull Summary")
+    print("######################################################")
+    print(f"Success: {success_sources}")
+    print(f"Failed: {failed_sources}")
 
 
 if __name__ == "__main__":

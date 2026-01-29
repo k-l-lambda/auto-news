@@ -485,7 +485,7 @@ class NotionAgent:
             "database_id": database_id,
             "sorts": [
                 {
-                    "property": "Created time",
+                    "timestamp": "created_time",
                     "direction": "descending",
                 },
             ],

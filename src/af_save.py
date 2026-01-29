@@ -10,7 +10,10 @@ from ops_article import OperatorArticle
 from ops_youtube import OperatorYoutube
 from ops_rss import OperatorRSS
 from ops_reddit import OperatorReddit
-from ops_web import OperatorWeb
+try:
+    from ops_web import OperatorWeb
+except ImportError:
+    OperatorWeb = None
 
 
 parser = argparse.ArgumentParser()
@@ -265,30 +268,42 @@ def process_web(args):
 def run(args):
     sources = args.sources.split(",")
     stats = []
+    failed_sources = []
+    success_sources = []
 
     for source in sources:
         print(f"Pushing data for source: {source} ...")
 
-        # Notes: For twitter we don't need summary step
-        if source == "Twitter":
-            stat = process_twitter(args)
+        try:
+            stat = None
 
-        elif source == "Article":
-            stat = process_article(args)
+            # Notes: For twitter we don't need summary step
+            if source == "Twitter":
+                stat = process_twitter(args)
 
-        elif source == "Youtube":
-            stat = process_youtube(args)
+            elif source == "Article":
+                stat = process_article(args)
 
-        elif source == "RSS":
-            stat = process_rss(args)
+            elif source == "Youtube":
+                stat = process_youtube(args)
 
-        elif source == "Reddit":
-            stat = process_reddit(args)
+            elif source == "RSS":
+                stat = process_rss(args)
 
-        elif source == "Web":
-            stat = process_web(args)
+            elif source == "Reddit":
+                stat = process_reddit(args)
 
-        stats.extend(stat)
+            elif source == "Web":
+                stat = process_web(args)
+
+            if stat:
+                stats.extend(stat)
+            success_sources.append(source)
+
+        except Exception as e:
+            print(f"[ERROR] Failed to process {source}: {e}")
+            failed_sources.append(source)
+            # Continue with next source instead of stopping
 
     # Print stats
     print("#####################################################")
@@ -296,6 +311,12 @@ def run(args):
     print("#####################################################")
     for stat in stats:
         stat.print()
+
+    print("#####################################################")
+    print("# Save Summary")
+    print("#####################################################")
+    print(f"Success: {success_sources}")
+    print(f"Failed: {failed_sources}")
 
 
 if __name__ == "__main__":

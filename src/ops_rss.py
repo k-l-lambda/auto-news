@@ -12,7 +12,10 @@ from llm_agent import (
     LLMAgentSummary,
 )
 import utils
-from ops_web_base import WebCollectorBase
+try:
+    from ops_web_base import WebCollectorBase
+except ImportError:
+    from ops_base import OperatorBase as WebCollectorBase
 from db_cli import DBClient
 from ops_milvus import OperatorMilvus
 from ops_notion import OperatorNotion
@@ -49,7 +52,7 @@ class OperatorRSS(WebCollectorBase):
         print(f"[fetch_articles] list_name: {list_name}, feed_url: {feed_url}, count: {count}")
 
         # Configure web collector if enhanced settings provided
-        if rss_config:
+        if rss_config and hasattr(self, 'configure_from_source'):
             self.configure_from_source({
                 "browser_mode": rss_config.get("browser_mode", False),
                 "xpath": rss_config.get("xpath", ""),
@@ -99,7 +102,7 @@ class OperatorRSS(WebCollectorBase):
             content = ""
             summary = entry.get("summary") or ""
 
-            if rss_config and rss_config.get("fetch_full_article"):
+            if rss_config and rss_config.get("fetch_full_article") and hasattr(self, 'extract_web_content'):
                 print(f"[fetch_articles] Fetching full article from: {link}")
                 try:
                     xpath = rss_config.get("xpath", "")
@@ -130,7 +133,8 @@ class OperatorRSS(WebCollectorBase):
             articles.append(article)
 
         # Cleanup Playwright if used
-        self.stop_playwright()
+        if hasattr(self, 'stop_playwright'):
+            self.stop_playwright()
 
         return articles
 
@@ -236,7 +240,7 @@ class OperatorRSS(WebCollectorBase):
         print("# Filter RSS (After Scoring)")
         print("#####################################################")
         k = kwargs.setdefault("k", 3)
-        min_score = kwargs.setdefault("min_score", 4)
+        min_score = kwargs.setdefault("min_score", 0)
         print(f"k: {k}, input size: {len(pages)}, min_score: {min_score}")
 
         # 1. filter all score >= min_score
@@ -293,8 +297,12 @@ class OperatorRSS(WebCollectorBase):
                 print(f"RSS article scored {page_score}")
 
             except Exception as e:
-                print(f"[ERROR]: Score page failed, skip: {e}")
+                print(f"[ERROR]: Score page failed, assigning default score -1: {e}")
                 traceback.print_exc()
+                # Still add page with default score so it passes through filter
+                scored_page = copy.deepcopy(page)
+                scored_page["__relevant_score"] = -1
+                scored_list.append(scored_page)
 
         print(f"Scored_pages ({len(scored_list)}): {scored_list}")
         return scored_list
