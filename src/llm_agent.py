@@ -398,10 +398,13 @@ class LLMAgentSummary(LLMAgentBase):
         result = self.llmchain.invoke({"input_documents": docs})
         summary_resp = result.get("output_text", "")
 
-        # Convert markdown to HTML if enabled
-        if self.render_html and summary_resp:
-            summary_resp = markdown_to_html(summary_resp)
-            print(f"[LLM] Converted summary to HTML ({len(summary_resp)} chars)")
+        # Note: Keep markdown format - Notion API doesn't support raw HTML
+        # and will strip all HTML tags. Notion can render basic markdown
+        # (bold with **, lists, etc.) in its rich_text blocks.
+        # HTML rendering is only useful for non-Notion targets.
+        # if self.render_html and summary_resp:
+        #     summary_resp = markdown_to_html(summary_resp)
+        #     print(f"[LLM] Converted summary to HTML ({len(summary_resp)} chars)")
 
         return summary_resp
 
