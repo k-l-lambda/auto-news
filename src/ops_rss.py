@@ -10,6 +10,7 @@ from notion import NotionAgent
 from llm_agent import (
     LLMAgentCategoryAndRanking,
     LLMAgentSummary,
+    LLMAgentTitle,
 )
 import utils
 try:
@@ -312,12 +313,21 @@ class OperatorRSS(WebCollectorBase):
         print("# Summarize RSS Articles")
         print("#####################################################")
         SUMMARY_MAX_LENGTH = int(os.getenv("SUMMARY_MAX_LENGTH", 20000))
+        TRANSLATION_LANG = os.getenv("TRANSLATION_LANG", "")
         print(f"Number of pages: {len(pages)}")
         print(f"Summary max length: {SUMMARY_MAX_LENGTH}")
+        print(f"Translation language: {TRANSLATION_LANG}")
 
         llm_agent = LLMAgentSummary()
         llm_agent.init_prompt()
         llm_agent.init_llm()
+
+        # Initialize title agent if translation is enabled
+        title_agent = None
+        if TRANSLATION_LANG:
+            title_agent = LLMAgentTitle()
+            title_agent.init_prompt()
+            title_agent.init_llm()
 
         client = DBClient()
         redis_key_expire_time = os.getenv(
@@ -369,11 +379,32 @@ class OperatorRSS(WebCollectorBase):
                 print("Found llm summary from cache, decoding (utf-8) ...")
                 summary = utils.bytes2str(llm_summary_resp)
 
+            # Generate localized title if translation language is set
+            localized_title = title
+            if title_agent:
+                title_cache_key = f"title_{page_id}"
+                cached_title = client.get_notion_summary_item_id(
+                    "rss", list_name, title_cache_key)
+
+                if not cached_title:
+                    # Use summary or content for title generation
+                    title_input = summary if summary else content[:2000]
+                    localized_title = title_agent.run(title_input)
+                    print(f"Generated localized title: {localized_title}")
+
+                    client.set_notion_summary_item_id(
+                        "rss", list_name, title_cache_key, localized_title,
+                        expired_time=int(redis_key_expire_time))
+                else:
+                    localized_title = utils.bytes2str(cached_title)
+                    print(f"Found cached localized title: {localized_title}")
+
             # assemble summary into page
             summarized_page = copy.deepcopy(page)
             summarized_page["__summary"] = summary
+            summarized_page["__localized_title"] = localized_title
 
-            print(f"Used {time.time() - st:.3f}s, Summarized page_id: {page_id}, summary: {summary}")
+            print(f"Used {time.time() - st:.3f}s, Summarized page_id: {page_id}, summary: {summary[:200]}...")
             summarized_pages.append(summarized_page)
 
         return summarized_pages

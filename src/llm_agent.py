@@ -1,4 +1,5 @@
 import os
+import re
 
 import httpx
 import tiktoken
@@ -18,7 +19,39 @@ try:
 except ImportError:
     genai = None
 
+try:
+    import markdown
+except ImportError:
+    markdown = None
+
 import llm_prompts
+
+
+def markdown_to_html(text: str) -> str:
+    """Convert markdown text to HTML."""
+    if not text:
+        return text
+
+    if markdown:
+        # Use markdown library if available
+        return markdown.markdown(text, extensions=['tables', 'fenced_code'])
+    else:
+        # Simple fallback conversion
+        html = text
+        # Convert headers
+        html = re.sub(r'^### (.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
+        html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
+        html = re.sub(r'^# (.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
+        # Convert bold
+        html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
+        # Convert italic
+        html = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html)
+        # Convert code blocks
+        html = re.sub(r'`(.+?)`', r'<code>\1</code>', html)
+        # Convert line breaks
+        html = html.replace('\n\n', '</p><p>')
+        html = f'<p>{html}</p>'
+        return html
 
 
 #######################################################################
@@ -282,6 +315,8 @@ class LLMAgentCategoryAndRanking(LLMAgentBase):
 class LLMAgentSummary(LLMAgentBase):
     def __init__(self, api_key="", model_name="gpt-3.5-turbo"):
         super().__init__(api_key, model_name)
+        self.target_lang = None
+        self.render_html = False
 
     def init_prompt(
         self,
@@ -291,18 +326,19 @@ class LLMAgentSummary(LLMAgentBase):
     ):
         self.map_prompt = map_prompt
         self.combine_prompt = combine_prompt
+        self.target_lang = os.getenv("TRANSLATION_LANG")
+        self.render_html = os.getenv("SUMMARY_RENDER_HTML", "true").lower() == "true"
 
         if not self.combine_prompt:
-            translation_lang = os.getenv("TRANSLATION_LANG")
-            print(f"[LLMAgentSummary] translation language: {translation_lang}, translation_enabled: {translation_enabled}")
+            print(f"[LLMAgentSummary] target language: {self.target_lang}, translation_enabled: {translation_enabled}, render_html: {self.render_html}")
 
-            prompt_no_translation = llm_prompts.LLM_PROMPT_SUMMARY_COMBINE_PROMPT3
-            prompt_with_translation = llm_prompts.LLM_PROMPT_SUMMARY_COMBINE_PROMPT3 + llm_prompts.LLM_PROMPT_SUMMARY_COMBINE_PROMPT_SUFFIX.format(translation_lang, translation_lang)
+            if self.target_lang and translation_enabled:
+                # Direct target language output (no English + translation separator)
+                prompt_tpl = llm_prompts.LLM_PROMPT_SUMMARY_TARGET_LANG.format(self.target_lang)
+            else:
+                # Default English summary
+                prompt_tpl = llm_prompts.LLM_PROMPT_SUMMARY_COMBINE_PROMPT3
 
-            # When user specific translation language in the config AND
-            # translation_enabled=True, we use combined translation
-            # prompt
-            prompt_tpl = prompt_with_translation if translation_lang and translation_enabled else prompt_no_translation
             self.combine_prompt = prompt_tpl
 
         self.combine_prompt_tpl = PromptTemplate(
@@ -361,7 +397,44 @@ class LLMAgentSummary(LLMAgentBase):
 
         result = self.llmchain.invoke({"input_documents": docs})
         summary_resp = result.get("output_text", "")
+
+        # Convert markdown to HTML if enabled
+        if self.render_html and summary_resp:
+            summary_resp = markdown_to_html(summary_resp)
+            print(f"[LLM] Converted summary to HTML ({len(summary_resp)} chars)")
+
         return summary_resp
+
+
+class LLMAgentTitle(LLMAgentBase):
+    """Generate localized title for articles."""
+    def __init__(self, api_key="", model_name="gpt-3.5-turbo"):
+        super().__init__(api_key, model_name)
+        self.target_lang = None
+
+    def init_prompt(self, prompt=None, target_lang=None):
+        self.target_lang = target_lang or os.getenv("TRANSLATION_LANG")
+
+        if not prompt:
+            if self.target_lang:
+                prompt = llm_prompts.LLM_PROMPT_TITLE_TARGET_LANG.format(self.target_lang)
+            else:
+                prompt = llm_prompts.LLM_PROMPT_TITLE
+
+        self._init_prompt(prompt)
+        print(f"[LLMAgentTitle] target_lang: {self.target_lang}")
+
+    def run(self, text: str):
+        """Generate title from content."""
+        # Use first 2000 chars for title generation
+        text = text[:2000] if len(text) > 2000 else text
+        tokens = self.get_num_tokens(text)
+        print(f"[LLMAgentTitle] number of tokens: {tokens}")
+
+        response = self.llmchain.invoke({"content": text})
+        # Clean up the response - remove quotes, extra whitespace
+        title = response.strip().strip('"\'')
+        return title
 
 
 class LLMAgentJournal(LLMAgentBase):

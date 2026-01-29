@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import html
 import traceback
@@ -962,16 +963,43 @@ class NotionAgent:
         return properties, blocks
 
     def _createSummaryInPage(self, summary):
+        """
+        Create summary blocks in page.
+        If TRANSLATION_LANG is set, summary is already in target language.
+        Otherwise, check for English + translation format (separated by ===).
+        """
         blocks = []
 
-        summary_en, summary_trans = utils.splitSummaryTranslation(summary)
-        block_content = f"Summary:\n{summary_en}"
+        if not summary:
+            return blocks
 
-        blocks.extend(self._createBlock_RichText("paragraph", block_content))
+        # Check if this is HTML content (starts with <p> or <h)
+        is_html = summary.strip().startswith('<')
 
-        if summary_trans:
-            blocks.append(self._createBlock_Toggle(
-                "Translation", summary_trans))
+        # Check if this is old format with English + translation (separated by ===)
+        if '===' in summary and not is_html:
+            summary_en, summary_trans = utils.splitSummaryTranslation(summary)
+            block_content = f"Summary:\n{summary_en}"
+            blocks.extend(self._createBlock_RichText("paragraph", block_content))
+
+            if summary_trans:
+                blocks.append(self._createBlock_Toggle(
+                    "Translation", summary_trans))
+        else:
+            # Single language summary (already in target language or English)
+            # If HTML, strip tags for Notion (Notion doesn't support raw HTML in rich_text)
+            if is_html:
+                # Convert HTML to plain text for Notion
+                plain_summary = html.unescape(summary)
+                # Simple tag stripping
+                import re
+                plain_summary = re.sub(r'<[^>]+>', '', plain_summary)
+                plain_summary = re.sub(r'\s+', ' ', plain_summary).strip()
+                block_content = f"Summary:\n{plain_summary}"
+            else:
+                block_content = f"Summary:\n{summary}"
+
+            blocks.extend(self._createBlock_RichText("paragraph", block_content))
 
         return blocks
 
@@ -983,6 +1011,7 @@ class NotionAgent:
         Special fields:
         - content    The original content (Could be very huge), notes that each block has 2000 chars limitation
         - __summary  The summary content
+        - __localized_title  The localized title (if TRANSLATION_LANG is set)
         """
         summary_enabled = kwargs.setdefault("summary", True)
         summary = ranked_page.get("__summary") or ""
@@ -993,12 +1022,15 @@ class NotionAgent:
         append_notion_url = kwargs.setdefault("append_notion_url", True)
         prop_add_take_away = kwargs.setdefault("prop_add_take_away", False)
 
+        # Use localized title if available, otherwise use original title
+        display_title = ranked_page.get("__localized_title") or ranked_page['title']
+
         properties = {
             "Name": {
                 "title": [
                     {
                         "text": {
-                            "content": f"{ranked_page['title']}"
+                            "content": f"{display_title}"
                         }
                     }
                 ]

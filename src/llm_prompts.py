@@ -123,6 +123,18 @@ LLM_PROMPT_TRANSLATION = """
 Translate the below content into {}:
 """
 
+# Direct target language summary (no English, no separator)
+LLM_PROMPT_SUMMARY_TARGET_LANG = """
+Write a concise and precise numbered list summary in {} of the following text without losing any numbers and key points:
+```{{text}}```
+"""
+
+# Generate title in target language
+LLM_PROMPT_TITLE_TARGET_LANG = """
+Generate a concise, SEO-optimized title in {} (at most 15 words) for the following content. Output ONLY the title, nothing else:
+{{content}}
+"""
+
 LLM_PROMPT_TITLE = """
 Generate a concise SEO-optimized 'Title', which is at most eight words for the below content:
 {content}

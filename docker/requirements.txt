@@ -34,6 +34,9 @@ pinecone-client
 # RSS
 feedparser
 
+# Markdown to HTML
+markdown
+
 # Speech to Text
 SpeechRecognition
 
