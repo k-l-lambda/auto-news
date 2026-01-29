@@ -78,7 +78,7 @@ NUMBERED LIST SUMMARY IN BOTH ENGLISH AND {}, AFTER FINISHING ALL ENGLISH PART, 
 """
 
 LLM_PROMPT_SUMMARY_COMBINE_PROMPT3 = """
-As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text.
+As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text. Use Markdown formatting.
 
 Guidelines:
 - Start with a brief mention of the source/publication if identifiable from the text
@@ -88,14 +88,28 @@ Guidelines:
 - Cite specific data, statistics, or concrete examples that support the main arguments
 - Note any counterintuitive findings or paradigm-shifting ideas
 - Explain WHY this article might interest the reader (e.g., emerging trends, investment opportunities, career implications, or industry disruption)
-- Mark the most important points with emphasis (bold or **key point**)
+- Use **bold** for key terms and important points
+- Use separate paragraphs for different sections
 
 Avoid:
 - Generic descriptions or background information that adds no value
 - Repetitive or redundant points
 - Surface-level observations without depth
 
-Format: Start with "[Source: XXX]" if source is identifiable, followed by a brief "Why Read This:" statement explaining the article's relevance, then a numbered list of 3-7 key points. Each point should be substantive and insightful:
+Output Format (use Markdown):
+## [Source: XXX]
+
+**Why Read This:** [Brief explanation]
+
+### Key Insights
+
+1. **[Key Point 1]**: [Explanation]
+
+2. **[Key Point 2]**: [Explanation]
+
+... (3-7 points total, each substantive and insightful)
+
+Content to analyze:
 ```{text}```
 """
 
@@ -143,7 +157,7 @@ Translate the below content into {}:
 
 # Direct target language summary (no English, no separator)
 LLM_PROMPT_SUMMARY_TARGET_LANG = """
-As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text. Write your summary in {}.
+As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text. Write your summary in {} using Markdown formatting.
 
 Guidelines:
 - Start with a brief mention of the source/publication if identifiable from the text
@@ -153,14 +167,28 @@ Guidelines:
 - Cite specific data, statistics, or concrete examples that support the main arguments
 - Note any counterintuitive findings or paradigm-shifting ideas
 - Explain WHY this article might interest the reader (e.g., emerging trends, investment opportunities, career implications, or industry disruption)
-- Mark the most important points with emphasis (bold or **key point**)
+- Use **bold** for key terms and important points
+- Use separate paragraphs for different sections
 
 Avoid:
 - Generic descriptions or background information that adds no value
 - Repetitive or redundant points
 - Surface-level observations without depth
 
-Format: Start with "[Source: XXX]" if source is identifiable, followed by a brief "Why Read This:" statement (in {}) explaining the article's relevance, then a numbered list of 3-7 key points in {}. Each point should be substantive and insightful:
+Output Format (use Markdown):
+## [Source: XXX]
+
+**Why Read This:** [Brief explanation in {}]
+
+### Key Insights
+
+1. **[Key Point 1]**: [Explanation]
+
+2. **[Key Point 2]**: [Explanation]
+
+... (3-7 points total, each substantive and insightful)
+
+Content to analyze:
 ```{{text}}```
 """
 
