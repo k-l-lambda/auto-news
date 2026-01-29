@@ -23,6 +23,7 @@ Constraints:
 - Evaluate the quality of the text on a scale of 0 to 1, where 0 represents poor quality and 1 represents excellent quality.
 - Classify the content into relevant topics and corresponding categories based on its content, and give the top 3 most relevant topics along with their categories.
 - Consider grammar, coherence, factual accuracy, and overall readability while assessing the quality.
+- Give higher scores to articles that reflect new trends and developments in global economic and technological macro-level dynamics.
 - Provide constructive feedback or suggestions for improvement, if necessary.
 - Ensure objectivity and impartiality in the evaluation.
 
