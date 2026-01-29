@@ -457,9 +457,21 @@ class OperatorRSS(WebCollectorBase):
                 "rss", list_name, page_id)
 
             category_and_rank_str = None
+            need_rerank = False
 
-            if not llm_ranking_resp:
-                print("Not found category_and_rank_str in cache, fallback to llm_agent to rank")
+            if llm_ranking_resp:
+                # Check if cached ranking has empty topics (from when classification was disabled)
+                cached_str = utils.bytes2str(llm_ranking_resp)
+                cached_data = utils.fix_and_parse_json(cached_str)
+                if cached_data and not cached_data.get("topics"):
+                    print("Cached ranking has empty topics, will re-rank")
+                    need_rerank = True
+                else:
+                    print("Found category_and_rank_str from cache")
+                    category_and_rank_str = cached_str
+
+            if not llm_ranking_resp or need_rerank:
+                print("Not found category_and_rank_str in cache or need re-rank, calling llm_agent")
                 category_and_rank_str = llm_agent.run(text)
 
                 print(f"Cache llm response for {redis_key_expire_time}s, page_id: {page_id}")
@@ -467,10 +479,6 @@ class OperatorRSS(WebCollectorBase):
                     "rss", list_name, page_id,
                     category_and_rank_str,
                     expired_time=int(redis_key_expire_time))
-
-            else:
-                print("Found category_and_rank_str from cache")
-                category_and_rank_str = utils.bytes2str(llm_ranking_resp)
 
             print(f"Used {time.time() - st:.3f}s, Category and Rank: text: {text}, rank_resp: {category_and_rank_str}")
 
