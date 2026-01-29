@@ -161,8 +161,8 @@ def process_rss(args):
         start_date=args.start,
         max_distance=args.max_distance)
 
-    # Only pick top 1 to reduce the overflow
-    data_filtered = op.filter(data_scored, k=1, min_score=4)
+    # Pick top k articles after scoring
+    data_filtered = op.filter(data_scored, k=30, min_score=4)
     data_summarized = op.summarize(data_filtered)
 
     targets = args.targets.split(",")
