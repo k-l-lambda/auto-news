@@ -368,7 +368,9 @@ class OperatorRSS(WebCollectorBase):
                         continue
 
                 content = content[:SUMMARY_MAX_LENGTH]
-                summary = llm_agent.run(content)
+                # Prepend source name for LLM to include in summary
+                content_with_source = f"[Source: {list_name}]\n\n{content}"
+                summary = llm_agent.run(content_with_source)
 
                 print(f"Cache llm response for {redis_key_expire_time}s, page_id: {page_id}, summary: {summary}")
                 client.set_notion_summary_item_id(

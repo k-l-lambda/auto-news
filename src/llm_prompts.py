@@ -80,19 +80,22 @@ NUMBERED LIST SUMMARY IN BOTH ENGLISH AND {}, AFTER FINISHING ALL ENGLISH PART, 
 LLM_PROMPT_SUMMARY_COMBINE_PROMPT3 = """
 As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text.
 
-Focus on:
-- Key innovations, breakthroughs, or novel perspectives presented
-- Implications for global economic trends, technological developments, or scientific progress
-- Actionable insights or strategic takeaways
-- Specific data, statistics, or concrete examples that support the main arguments
-- Any counterintuitive findings or paradigm-shifting ideas
+Guidelines:
+- Start with a brief mention of the source/publication if identifiable from the text
+- Extract key innovations, breakthroughs, or novel perspectives
+- Highlight implications for global economic trends, technological developments, or scientific progress
+- Include actionable insights or strategic takeaways
+- Cite specific data, statistics, or concrete examples that support the main arguments
+- Note any counterintuitive findings or paradigm-shifting ideas
+- Explain WHY this article might interest the reader (e.g., emerging trends, investment opportunities, career implications, or industry disruption)
+- Mark the most important points with emphasis (bold or **key point**)
 
 Avoid:
 - Generic descriptions or background information that adds no value
 - Repetitive or redundant points
 - Surface-level observations without depth
 
-Format as a numbered list of 3-7 key points, each point should be substantive and insightful:
+Format: Start with "[Source: XXX]" if source is identifiable, followed by a brief "Why Read This:" statement explaining the article's relevance, then a numbered list of 3-7 key points. Each point should be substantive and insightful:
 ```{text}```
 """
 
@@ -142,19 +145,22 @@ Translate the below content into {}:
 LLM_PROMPT_SUMMARY_TARGET_LANG = """
 As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text. Write your summary in {}.
 
-Focus on:
-- Key innovations, breakthroughs, or novel perspectives presented
-- Implications for global economic trends, technological developments, or scientific progress
-- Actionable insights or strategic takeaways
-- Specific data, statistics, or concrete examples that support the main arguments
-- Any counterintuitive findings or paradigm-shifting ideas
+Guidelines:
+- Start with a brief mention of the source/publication if identifiable from the text
+- Extract key innovations, breakthroughs, or novel perspectives
+- Highlight implications for global economic trends, technological developments, or scientific progress
+- Include actionable insights or strategic takeaways
+- Cite specific data, statistics, or concrete examples that support the main arguments
+- Note any counterintuitive findings or paradigm-shifting ideas
+- Explain WHY this article might interest the reader (e.g., emerging trends, investment opportunities, career implications, or industry disruption)
+- Mark the most important points with emphasis (bold or **key point**)
 
 Avoid:
 - Generic descriptions or background information that adds no value
 - Repetitive or redundant points
 - Surface-level observations without depth
 
-Format as a numbered list of 3-7 key points in {}, each point should be substantive and insightful:
+Format: Start with "[Source: XXX]" if source is identifiable, followed by a brief "Why Read This:" statement (in {}) explaining the article's relevance, then a numbered list of 3-7 key points in {}. Each point should be substantive and insightful:
 ```{{text}}```
 """
 

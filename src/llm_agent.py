@@ -334,7 +334,7 @@ class LLMAgentSummary(LLMAgentBase):
 
             if self.target_lang and translation_enabled:
                 # Direct target language output (no English + translation separator)
-                prompt_tpl = llm_prompts.LLM_PROMPT_SUMMARY_TARGET_LANG.format(self.target_lang, self.target_lang)
+                prompt_tpl = llm_prompts.LLM_PROMPT_SUMMARY_TARGET_LANG.format(self.target_lang, self.target_lang, self.target_lang)
             else:
                 # Default English summary
                 prompt_tpl = llm_prompts.LLM_PROMPT_SUMMARY_COMBINE_PROMPT3
