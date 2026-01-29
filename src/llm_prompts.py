@@ -78,7 +78,21 @@ NUMBERED LIST SUMMARY IN BOTH ENGLISH AND {}, AFTER FINISHING ALL ENGLISH PART, 
 """
 
 LLM_PROMPT_SUMMARY_COMBINE_PROMPT3 = """
-Write a concise and precise numbered list summary of the following text without losing any numbers and key points (English numbers need to be converted to digital numbers):
+As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text.
+
+Focus on:
+- Key innovations, breakthroughs, or novel perspectives presented
+- Implications for global economic trends, technological developments, or scientific progress
+- Actionable insights or strategic takeaways
+- Specific data, statistics, or concrete examples that support the main arguments
+- Any counterintuitive findings or paradigm-shifting ideas
+
+Avoid:
+- Generic descriptions or background information that adds no value
+- Repetitive or redundant points
+- Surface-level observations without depth
+
+Format as a numbered list of 3-7 key points, each point should be substantive and insightful:
 ```{text}```
 """
 
@@ -126,7 +140,21 @@ Translate the below content into {}:
 
 # Direct target language summary (no English, no separator)
 LLM_PROMPT_SUMMARY_TARGET_LANG = """
-Write a concise and precise numbered list summary in {} of the following text without losing any numbers and key points:
+As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text. Write your summary in {}.
+
+Focus on:
+- Key innovations, breakthroughs, or novel perspectives presented
+- Implications for global economic trends, technological developments, or scientific progress
+- Actionable insights or strategic takeaways
+- Specific data, statistics, or concrete examples that support the main arguments
+- Any counterintuitive findings or paradigm-shifting ideas
+
+Avoid:
+- Generic descriptions or background information that adds no value
+- Repetitive or redundant points
+- Surface-level observations without depth
+
+Format as a numbered list of 3-7 key points in {}, each point should be substantive and insightful:
 ```{{text}}```
 """
 
