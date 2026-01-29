@@ -498,9 +498,17 @@ class NotionAgent:
             print(f"result: page id: {page['id']}")
             page_id = page["id"]
 
+            # Support both "id" and "Name" property names for backwards compatibility
+            title_prop = page["properties"].get("id") or page["properties"].get("Name")
+            if title_prop and title_prop.get("title"):
+                db_id = title_prop["title"][0]["text"]["content"]
+            else:
+                print(f"[WARN] Could not find database_id in page properties: {page['properties'].keys()}")
+                continue
+
             extracted_pages.append({
                 "page_id": page_id,
-                "database_id": page["properties"]["id"]["title"][0]["text"]["content"],
+                "database_id": db_id,
                 "created_time": page["created_time"],
                 "last_edited_time": page["last_edited_time"],
             })
