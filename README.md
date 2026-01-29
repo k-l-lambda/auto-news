@@ -43,6 +43,32 @@ For more background, see this [Blog post](https://finaldie.com/blog/auto-news-an
 
 <img src="https://github.com/finaldie/auto-news/assets/1088543/778242a7-5811-49e1-8982-8bd32d141639" width="80%" />
 
+## Recent Enhancements
+
+### Rich Text Summaries in Notion
+- **Markdown to Notion Blocks**: Summaries now render with proper formatting in Notion - headings, bold text, numbered lists, and bullet points are displayed natively instead of plain text
+- **Structured Summary Format**: Each summary includes source attribution, "Why Read This" explanation, and numbered key insights with inline formatting
+
+### Multi-Language Support
+- **Direct Target Language Output**: Summaries are generated directly in your configured language (e.g., Chinese) without the previous English + translation format
+- **Localized Titles**: Article titles can be generated in your preferred language
+
+### RSS Pipeline Improvements
+- **Content Ranking & Classification**: Articles are now properly ranked and categorized based on topics and relevance scores
+- **Improved Filtering**: Configurable top-k filtering with similarity-based scoring using vector embeddings
+- **Cold Start Support**: Import seed articles (e.g., arXiv papers, reading notes) to bootstrap the recommendation system
+
+### Web Collector (New)
+- **Simple Web Scraping**: New collector for extracting content from web pages
+- **Browser Mode**: Optional Playwright-based rendering for JavaScript-heavy sites
+- **XPath Extraction**: Custom content selection via XPath expressions
+- **Trafilatura Integration**: Intelligent article content extraction
+
+### Summary Quality Improvements
+- **Insight-Focused Summaries**: Prompts optimized to extract core ideas, innovations, and actionable insights
+- **Source Attribution**: Summaries identify the original publication/source
+- **Reader Relevance**: Each summary explains why the article might interest the reader (trends, opportunities, implications)
+
 ## Documentation
 https://github.com/finaldie/auto-news/wiki
 
