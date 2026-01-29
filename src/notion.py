@@ -10,6 +10,170 @@ import llm_const
 import utils
 
 
+def _parse_inline_formatting(text):
+    """
+    Parse inline markdown formatting and convert to Notion rich_text array.
+    Supports: **bold**, *italic*, `code`
+    """
+    rich_text = []
+
+    # Pattern to match **bold**, *italic*, `code`, or plain text
+    pattern = r'(\*\*(.+?)\*\*|\*([^*]+?)\*|`([^`]+?)`)'
+
+    last_end = 0
+    for match in re.finditer(pattern, text):
+        # Add any plain text before this match
+        if match.start() > last_end:
+            plain = text[last_end:match.start()]
+            if plain:
+                rich_text.append({
+                    "type": "text",
+                    "text": {"content": plain}
+                })
+
+        full_match = match.group(0)
+        if full_match.startswith('**'):
+            # Bold
+            content = match.group(2)
+            rich_text.append({
+                "type": "text",
+                "text": {"content": content},
+                "annotations": {"bold": True}
+            })
+        elif full_match.startswith('`'):
+            # Code
+            content = match.group(4)
+            rich_text.append({
+                "type": "text",
+                "text": {"content": content},
+                "annotations": {"code": True}
+            })
+        elif full_match.startswith('*'):
+            # Italic
+            content = match.group(3)
+            rich_text.append({
+                "type": "text",
+                "text": {"content": content},
+                "annotations": {"italic": True}
+            })
+
+        last_end = match.end()
+
+    # Add remaining plain text
+    if last_end < len(text):
+        remaining = text[last_end:]
+        if remaining:
+            rich_text.append({
+                "type": "text",
+                "text": {"content": remaining}
+            })
+
+    return rich_text if rich_text else [{"type": "text", "text": {"content": text}}]
+
+
+def markdown_to_notion_blocks(markdown_text):
+    """
+    Convert markdown text to Notion blocks.
+
+    Supports:
+    - ## Heading 2
+    - ### Heading 3
+    - **bold**, *italic*, `code` inline formatting
+    - 1. Numbered lists
+    - - Bullet lists
+    - Regular paragraphs
+    """
+    blocks = []
+    lines = markdown_text.strip().split('\n')
+
+    i = 0
+    while i < len(lines):
+        line = lines[i].rstrip()
+
+        # Skip empty lines
+        if not line:
+            i += 1
+            continue
+
+        # Heading 2: ## Title
+        if line.startswith('## '):
+            content = line[3:].strip()
+            blocks.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": _parse_inline_formatting(content)
+                }
+            })
+            i += 1
+            continue
+
+        # Heading 3: ### Title
+        if line.startswith('### '):
+            content = line[4:].strip()
+            blocks.append({
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": _parse_inline_formatting(content)
+                }
+            })
+            i += 1
+            continue
+
+        # Numbered list: 1. Item (handle multi-line)
+        if re.match(r'^\d+\.\s', line):
+            content = re.sub(r'^\d+\.\s*', '', line)
+            blocks.append({
+                "object": "block",
+                "type": "numbered_list_item",
+                "numbered_list_item": {
+                    "rich_text": _parse_inline_formatting(content)
+                }
+            })
+            i += 1
+            continue
+
+        # Bullet list: - Item or * Item (but not *italic*)
+        if (line.startswith('- ') or (line.startswith('* ') and not line.endswith('*'))):
+            content = line[2:].strip()
+            blocks.append({
+                "object": "block",
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {
+                    "rich_text": _parse_inline_formatting(content)
+                }
+            })
+            i += 1
+            continue
+
+        # Indented bullet (treat as nested) - convert to regular bullet
+        if line.strip().startswith('- ') or line.strip().startswith('* '):
+            content = line.strip()[2:].strip()
+            blocks.append({
+                "object": "block",
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {
+                    "rich_text": _parse_inline_formatting(content)
+                }
+            })
+            i += 1
+            continue
+
+        # Regular paragraph
+        para_text = line
+        blocks.append({
+            "object": "block",
+            "type": "paragraph",
+            "paragraph": {
+                "rich_text": _parse_inline_formatting(para_text)
+            }
+        })
+        i += 1
+
+    return blocks
+
+
 class NotionAgent:
     """
     A notion agent to operate page/database
@@ -965,19 +1129,22 @@ class NotionAgent:
     def _createSummaryInPage(self, summary):
         """
         Create summary blocks in page.
-        If TRANSLATION_LANG is set, summary is already in target language.
-        Otherwise, check for English + translation format (separated by ===).
+        Converts markdown to Notion native blocks for proper formatting.
         """
         blocks = []
 
         if not summary:
             return blocks
 
-        # Check if this is HTML content (starts with <p> or <h)
-        is_html = summary.strip().startswith('<')
+        # Check if this looks like markdown (has ## headers, **bold**, numbered lists)
+        is_markdown = bool(
+            re.search(r'^##\s', summary, re.MULTILINE) or
+            re.search(r'\*\*[^*]+\*\*', summary) or
+            re.search(r'^\d+\.\s', summary, re.MULTILINE)
+        )
 
         # Check if this is old format with English + translation (separated by ===)
-        if '===' in summary and not is_html:
+        if '===' in summary:
             summary_en, summary_trans = utils.splitSummaryTranslation(summary)
             block_content = f"Summary:\n{summary_en}"
             blocks.extend(self._createBlock_RichText("paragraph", block_content))
@@ -985,20 +1152,12 @@ class NotionAgent:
             if summary_trans:
                 blocks.append(self._createBlock_Toggle(
                     "Translation", summary_trans))
+        elif is_markdown:
+            # Convert markdown to Notion blocks for rich formatting
+            blocks.extend(markdown_to_notion_blocks(summary))
         else:
-            # Single language summary (already in target language or English)
-            # If HTML, strip tags for Notion (Notion doesn't support raw HTML in rich_text)
-            if is_html:
-                # Convert HTML to plain text for Notion
-                plain_summary = html.unescape(summary)
-                # Simple tag stripping
-                import re
-                plain_summary = re.sub(r'<[^>]+>', '', plain_summary)
-                plain_summary = re.sub(r'\s+', ' ', plain_summary).strip()
-                block_content = f"Summary:\n{plain_summary}"
-            else:
-                block_content = f"Summary:\n{summary}"
-
+            # Plain text summary
+            block_content = f"Summary:\n{summary}"
             blocks.extend(self._createBlock_RichText("paragraph", block_content))
 
         return blocks
