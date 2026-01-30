@@ -2215,6 +2215,139 @@ class NotionAgent:
 
         return new_page
 
+    def createDatabaseItem_ToRead_DailyDigest(
+        self,
+        database_id: str,
+        digest: dict,
+    ):
+        """
+        Create ToRead database item for Daily Digest.
+
+        Args:
+            database_id: Target ToRead database ID
+            digest: Dict with keys: title, content, translation, sources, source_pages, date
+        """
+        title = digest.get("title", "Daily Digest")
+        content = digest.get("content", "")
+        translation = digest.get("translation", "")
+        sources = digest.get("sources", {})
+        source_pages = digest.get("source_pages", [])
+        digest_date = digest.get("date", "")
+
+        print(f"[Notion.DailyDigest] Creating item: {title}")
+
+        # Build properties
+        properties = {
+            "Name": {
+                "title": [
+                    {
+                        "text": {
+                            "content": title[:100],  # Notion title limit
+                        }
+                    }
+                ]
+            },
+            "Source": {
+                "select": {
+                    "name": "daily_digest",
+                }
+            },
+            "Topic": {
+                "multi_select": [{"name": "Daily Digest"}],
+            },
+            "Category": {
+                "multi_select": [{"name": "News Digest"}],
+            },
+            "Rating": {
+                "number": 5  # High rating for digests
+            },
+        }
+
+        # Build blocks (page content)
+        blocks = []
+
+        # Add main digest content using markdown conversion
+        if content:
+            content_blocks = self._createSummaryInPage(content)
+            blocks.extend(content_blocks)
+
+        # Add divider before source links
+        blocks.append({
+            "object": "block",
+            "type": "divider",
+            "divider": {}
+        })
+
+        # Add source article links section
+        if source_pages:
+            # Add heading for source links
+            blocks.append({
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {"content": "Source Articles"}
+                    }]
+                }
+            })
+
+            # Add link to each source article (as numbered list with links)
+            for idx, page_info in enumerate(source_pages, 1):
+                page_title = page_info.get("title", "Untitled")[:50]
+                page_source = page_info.get("source", "")
+                page_id = page_info.get("id", "")
+
+                # Create a bulleted list item with link to page
+                if page_id:
+                    # Use link_to_page block to link to the Notion page
+                    blocks.append({
+                        "object": "block",
+                        "type": "bulleted_list_item",
+                        "bulleted_list_item": {
+                            "rich_text": [
+                                {
+                                    "type": "text",
+                                    "text": {
+                                        "content": f"[{page_source}] "
+                                    }
+                                },
+                                {
+                                    "type": "mention",
+                                    "mention": {
+                                        "type": "page",
+                                        "page": {"id": page_id}
+                                    }
+                                }
+                            ]
+                        }
+                    })
+
+        # Add translation toggle if available
+        if translation:
+            blocks.append(self._createBlock_Toggle(
+                "English Translation", translation))
+
+        # Add sources statistics section
+        if sources:
+            source_text = "Sources breakdown:\n"
+            for source_name, count in sources.items():
+                source_text += f"- {source_name}: {count} articles\n"
+
+            blocks.append(self._createBlock_Toggle(
+                "Source Statistics", source_text))
+
+        print(f"[Notion.DailyDigest] Creating page with {len(blocks)} blocks")
+
+        # Create the page
+        new_page = self.api.pages.create(
+            parent={"database_id": database_id},
+            properties=properties,
+            children=blocks
+        )
+
+        return new_page
+
     def createPageComment(
         self,
         page_id,
@@ -2584,6 +2717,62 @@ class NotionAgent:
             },
             "Take Aways": {
                 "rich_text": {}
+            },
+        }
+
+        # Create the new database under the specified page
+        new_database = self.api.databases.create(
+            parent={"type": "page_id", "page_id": parent_page_id},
+            title=title,
+            properties=new_database_properties
+        )
+
+        return new_database
+
+    def createDatabase_DailyDigest(self, name, parent_page_id):
+        """
+        Create a database for Daily Digest
+        """
+        title = [
+            {
+                "type": "text",
+                "text": {
+                    "content": name,
+                }
+            }
+        ]
+
+        # Set the properties of the new database
+        new_database_properties = {
+            "Name": {
+                "title": {}
+            },
+            "Date": {
+                "date": {}
+            },
+            "Created time": {
+                "created_time": {}
+            },
+            "Last edited time": {
+                "last_edited_time": {}
+            },
+            "Source": {
+                "select": {}
+            },
+            "Topic": {
+                "multi_select": {}
+            },
+            "Category": {
+                "multi_select": {}
+            },
+            "Rating": {
+                "number": {}
+            },
+            "Article Count": {
+                "number": {}
+            },
+            "Read": {
+                "checkbox": {}
             },
         }
 

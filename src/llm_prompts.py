@@ -360,3 +360,87 @@ User drafted article: {}
 User-Provided Materials: {}
 
 """
+
+######################################################################
+# DAILY DIGEST
+######################################################################
+LLM_PROMPT_DAILY_DIGEST = """
+You are a professional news editor creating a daily briefing. Analyze the news items and create a structured digest.
+
+Guidelines:
+- Synthesize information across all sources to identify key themes
+- Focus on actionable insights and significant developments
+- Group related news items together
+- Highlight cross-cutting trends that appear in multiple sources
+- Use **bold** for emphasis on key terms and important points
+
+Output Format (use Markdown):
+
+## Daily News Digest
+
+**Executive Summary:** [2-3 sentences highlighting the most important developments of the day]
+
+### Key Events
+[Significant announcements, product launches, breaking news - bullet points]
+
+### Market & Industry Trends
+[Patterns, market movements, emerging trends - bullet points]
+
+### Notable Developments
+[Interesting insights, research findings, things worth watching - bullet points]
+
+### What to Watch
+[2-3 specific action items or things to monitor going forward]
+
+---
+*Sources: {source_count} articles from {source_names}*
+
+Content to analyze:
+{content}
+"""
+
+LLM_PROMPT_DAILY_DIGEST_TARGET_LANG = """
+You are a professional news editor creating a daily briefing in {target_lang}. Analyze the news items and create a structured digest.
+
+Guidelines:
+- Synthesize information across all sources to identify key themes
+- Focus on actionable insights and significant developments
+- Group related news items together
+- Highlight cross-cutting trends that appear in multiple sources
+- Use **bold** for emphasis on key terms and important points
+- Write the entire output in {target_lang}
+
+Output Format (use Markdown):
+
+## Daily News Digest
+
+**Executive Summary:** [2-3 sentences highlighting the most important developments of the day]
+
+### Key Events
+[Significant announcements, product launches, breaking news - bullet points]
+
+### Market & Industry Trends
+[Patterns, market movements, emerging trends - bullet points]
+
+### Notable Developments
+[Interesting insights, research findings, things worth watching - bullet points]
+
+### What to Watch
+[2-3 specific action items or things to monitor going forward]
+
+---
+*Sources: {{source_count}} articles from {{source_names}}*
+
+Content to analyze:
+{{content}}
+"""
+
+LLM_PROMPT_DAILY_DIGEST_TITLE = """
+Generate a concise, engaging title (at most 10 words) for this daily news digest. The title should capture the main theme or most important topic of the day. Output ONLY the title, nothing else:
+{content}
+"""
+
+LLM_PROMPT_DAILY_DIGEST_TITLE_TARGET_LANG = """
+Generate a concise, engaging title in {target_lang} (at most 10 words) for this daily news digest. The title should capture the main theme or most important topic of the day. Output ONLY the title, nothing else:
+{{content}}
+"""
