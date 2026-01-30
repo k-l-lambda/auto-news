@@ -6,7 +6,7 @@ import os
 import json
 import requests
 from datetime import datetime, timedelta
-from flask import Flask, render_template_string
+from flask import Flask, render_template_string, jsonify, request
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -48,6 +48,23 @@ def get_dag_runs(dag_id, limit=5):
     except Exception as e:
         print(f"Error fetching runs for {dag_id}: {e}")
     return []
+
+
+def trigger_dag(dag_id):
+    """Trigger a DAG run via Airflow API."""
+    try:
+        resp = requests.post(
+            f"{AIRFLOW_HOST}/api/v1/dags/{dag_id}/dagRuns",
+            json={"conf": {}},
+            auth=(AIRFLOW_USER, AIRFLOW_PASSWORD),
+            timeout=10
+        )
+        if resp.status_code in [200, 201]:
+            return {"success": True, "data": resp.json()}
+        else:
+            return {"success": False, "error": f"HTTP {resp.status_code}: {resp.text}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 def get_notion_stats():
@@ -163,6 +180,22 @@ DASHBOARD_HTML = """
         }
         .refresh:hover { background: #2563eb; }
         .timestamp { color: #64748b; font-size: 0.9em; margin-top: 20px; }
+        .trigger-btn {
+            background: #059669; color: white; border: none;
+            padding: 6px 12px; border-radius: 6px; cursor: pointer;
+            font-size: 0.85em; margin-top: 10px; width: 100%;
+        }
+        .trigger-btn:hover { background: #047857; }
+        .trigger-btn:disabled { background: #475569; cursor: not-allowed; }
+        .trigger-btn.loading { background: #854d0e; }
+        .toast {
+            position: fixed; bottom: 20px; right: 20px;
+            background: #1e293b; border: 1px solid #334155;
+            padding: 12px 20px; border-radius: 8px;
+            display: none; z-index: 1000;
+        }
+        .toast.success { border-color: #4ade80; }
+        .toast.error { border-color: #f87171; }
     </style>
 </head>
 <body>
@@ -198,6 +231,9 @@ DASHBOARD_HTML = """
                 </div>
                 {% endfor %}
                 {% endif %}
+                <button class="trigger-btn" onclick="triggerDag('{{ dag.dag_id }}', this)">
+                    ▶ Trigger Run
+                </button>
             </div>
             {% endfor %}
         </div>
@@ -237,6 +273,45 @@ DASHBOARD_HTML = """
 
         <p class="timestamp">Last updated: {{ timestamp }}</p>
     </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+    function showToast(message, type) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'toast ' + type;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    async function triggerDag(dagId, btn) {
+        btn.disabled = true;
+        btn.classList.add('loading');
+        btn.textContent = '⏳ Triggering...';
+
+        try {
+            const resp = await fetch('/api/trigger/' + dagId, { method: 'POST' });
+            const data = await resp.json();
+
+            if (data.success) {
+                showToast('✓ ' + dagId + ' triggered successfully!', 'success');
+                btn.textContent = '✓ Triggered!';
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showToast('✗ Failed: ' + data.error, 'error');
+                btn.textContent = '▶ Trigger Run';
+                btn.disabled = false;
+                btn.classList.remove('loading');
+            }
+        } catch (e) {
+            showToast('✗ Error: ' + e.message, 'error');
+            btn.textContent = '▶ Trigger Run';
+            btn.disabled = false;
+            btn.classList.remove('loading');
+        }
+    }
+    </script>
 </body>
 </html>
 """
@@ -283,6 +358,13 @@ def api_stats():
         "mysql": get_mysql_stats(),
         "timestamp": datetime.now().isoformat()
     }
+
+
+@app.route("/api/trigger/<dag_id>", methods=["POST"])
+def api_trigger_dag(dag_id):
+    """Trigger a DAG run."""
+    result = trigger_dag(dag_id)
+    return jsonify(result)
 
 
 if __name__ == "__main__":
