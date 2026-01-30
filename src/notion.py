@@ -10,6 +10,22 @@ import llm_const
 import utils
 
 
+def _sanitize_multi_select_name(name, max_length=100):
+    """
+    Sanitize a name for Notion multi_select field.
+    - Removes commas (not allowed in multi_select options)
+    - Truncates to max_length (Notion limit is 100 chars)
+    """
+    if not name:
+        return name
+    # Replace commas with semicolons or remove them
+    sanitized = name.replace(",", ";")
+    # Truncate if too long
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length-3] + "..."
+    return sanitized
+
+
 def _parse_inline_formatting(text):
     """
     Parse inline markdown formatting and convert to Notion rich_text array.
@@ -1339,11 +1355,11 @@ class NotionAgent:
         categories,
         **kwargs
     ):
-        # assemble topics
-        topics_list = [{"name": t} for t in topics]
+        # assemble topics (sanitize to remove commas)
+        topics_list = [{"name": _sanitize_multi_select_name(t)} for t in topics]
 
-        # assemble category (multi-select)
-        categories_list = [{"name": c} for c in categories]
+        # assemble category (multi-select, sanitize to remove commas)
+        categories_list = [{"name": _sanitize_multi_select_name(c)} for c in categories]
 
         properties = {
             "Name": {
@@ -1489,11 +1505,11 @@ class NotionAgent:
         properties, blocks = self._createDatabaseItem_TwitterBase(
             list_names, tweet)
 
-        # assemble topics
-        topics_list = [{"name": t} for t in topics]
+        # assemble topics (sanitize to remove commas)
+        topics_list = [{"name": _sanitize_multi_select_name(t)} for t in topics]
 
-        # assemble category (multi-select)
-        categories_list = [{"name": c} for c in categories]
+        # assemble category (multi-select, sanitize to remove commas)
+        categories_list = [{"name": _sanitize_multi_select_name(c)} for c in categories]
 
         properties["Source"] = {
             "select": {
@@ -1557,11 +1573,11 @@ class NotionAgent:
         rate_number,
         **kwargs
     ):
-        # assemble topics
-        topics_list = [{"name": t} for t in topics]
+        # assemble topics (sanitize to remove commas)
+        topics_list = [{"name": _sanitize_multi_select_name(t)} for t in topics]
 
-        # assemble category (multi-select)
-        categories_list = [{"name": c} for c in categories]
+        # assemble category (multi-select, sanitize to remove commas)
+        categories_list = [{"name": _sanitize_multi_select_name(c)} for c in categories]
 
         list_names = kwargs.setdefault("list_names", [])
         source_list_names = [{"name": ln} for ln in list_names]
