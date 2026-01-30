@@ -109,17 +109,29 @@ class OperatorDailyDigest(OperatorBase):
 
         @param pages: Dict of pages to filter
         @param min_rating: Minimum rating to include (default: 3)
+        @param skip_read: Skip pages where last_edited_time > created_time (default: True)
         @return dict of filtered pages
         """
         print("#####################################################")
         print("# Filter Pages by Interests")
         print("#####################################################")
         min_rating = kwargs.get("min_rating", 3)
-        print(f"Minimum rating threshold: {min_rating}")
+        skip_read = kwargs.get("skip_read", True)
+        print(f"Minimum rating threshold: {min_rating}, Skip read: {skip_read}")
 
         filtered = {}
+        skipped_read = 0
 
         for page_id, page in pages.items():
+            # Skip already read pages (edited after creation)
+            if skip_read:
+                created_time = page.get("created_time", "")
+                last_edited_time = page.get("last_edited_time", "")
+                if created_time and last_edited_time and last_edited_time > created_time:
+                    skipped_read += 1
+                    print(f"  [R] Already read: {page.get('name', '')[:50]}... (edited: {last_edited_time})")
+                    continue
+
             user_rating = page.get("user_rating")
 
             # Get system Rating from properties
@@ -151,7 +163,7 @@ class OperatorDailyDigest(OperatorBase):
             else:
                 print(f"  [-] Exclude: {page.get('name', '')[:50]}... (user_rating={user_rating}, system_rating={system_rating})")
 
-        print(f"Filtered from {len(pages)} to {len(filtered)} pages")
+        print(f"Filtered from {len(pages)} to {len(filtered)} pages (skipped {skipped_read} already read)")
         return filtered
 
     def categorize_pages(self, pages):
