@@ -131,6 +131,11 @@ class OperatorDailyDigest(OperatorBase):
                 rating_prop = {}
             system_rating = rating_prop.get("number", 0) if isinstance(rating_prop, dict) else 0
 
+            # Normalize system_rating if it's on 0-1 scale (Web/Arxiv uses this)
+            # Convert to 1-5 scale for consistent filtering
+            if system_rating and 0 < system_rating <= 1:
+                system_rating = system_rating * 5  # 0.8 -> 4.0
+
             # Convert user_rating to int if it's a string
             user_rating_int = 0
             if user_rating:
