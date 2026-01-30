@@ -26,6 +26,86 @@ def _sanitize_multi_select_name(name, max_length=100):
     return sanitized
 
 
+# Predefined categories for content classification
+PREDEFINED_CATEGORIES = [
+    "Paper",        # Academic papers, research papers, arxiv
+    "AI/ML",        # Artificial Intelligence, Machine Learning
+    "Tech Industry", # Technology company news, product launches
+    "Engineering",  # Software engineering, programming, DevOps
+    "Security",     # Cybersecurity, privacy, hacking
+    "Business",     # Business strategy, company news
+    "Economy",      # Economics, finance, markets, investment
+    "Science",      # Scientific discoveries (non-AI/ML)
+    "Product",      # Product reviews, tools, applications
+    "Career",       # Career advice, personal development
+    "Other",        # Miscellaneous
+]
+
+# Mapping of common variations to standard categories
+CATEGORY_ALIASES = {
+    # Paper variations
+    "paper": "Paper", "papers": "Paper", "research": "Paper", "academic": "Paper",
+    "arxiv": "Paper", "publication": "Paper", "study": "Paper", "论文": "Paper",
+    # AI/ML variations
+    "ai": "AI/ML", "ml": "AI/ML", "machine learning": "AI/ML", "deep learning": "AI/ML",
+    "artificial intelligence": "AI/ML", "llm": "AI/ML", "nlp": "AI/ML",
+    "computer vision": "AI/ML", "neural network": "AI/ML", "人工智能": "AI/ML",
+    # Tech Industry variations
+    "tech": "Tech Industry", "technology": "Tech Industry", "startup": "Tech Industry",
+    "tech industry": "Tech Industry", "industry": "Tech Industry", "科技": "Tech Industry",
+    # Engineering variations
+    "software": "Engineering", "programming": "Engineering", "development": "Engineering",
+    "devops": "Engineering", "software engineering": "Engineering", "coding": "Engineering",
+    "engineering": "Engineering", "开发": "Engineering",
+    # Security variations
+    "security": "Security", "cybersecurity": "Security", "privacy": "Security",
+    "hacking": "Security", "vulnerability": "Security", "安全": "Security",
+    # Business variations
+    "business": "Business", "strategy": "Business", "company": "Business",
+    "startup": "Business", "商业": "Business",
+    # Economy variations
+    "economy": "Economy", "economics": "Economy", "finance": "Economy",
+    "investment": "Economy", "market": "Economy", "stock": "Economy",
+    "金融": "Economy", "经济": "Economy",
+    # Science variations
+    "science": "Science", "scientific": "Science", "biology": "Science",
+    "physics": "Science", "chemistry": "Science", "科学": "Science",
+    # Product variations
+    "product": "Product", "tool": "Product", "application": "Product",
+    "app": "Product", "review": "Product", "产品": "Product",
+    # Career variations
+    "career": "Career", "job": "Career", "workplace": "Career",
+    "personal development": "Career", "职业": "Career",
+    # Other
+    "other": "Other", "misc": "Other", "其他": "Other",
+}
+
+
+def _normalize_category(category):
+    """
+    Normalize a category to one of the predefined categories.
+    """
+    if not category:
+        return "Other"
+
+    # Check if already a valid category
+    if category in PREDEFINED_CATEGORIES:
+        return category
+
+    # Try to match via aliases (case-insensitive)
+    category_lower = category.lower().strip()
+    if category_lower in CATEGORY_ALIASES:
+        return CATEGORY_ALIASES[category_lower]
+
+    # Try partial matching
+    for alias, standard in CATEGORY_ALIASES.items():
+        if alias in category_lower or category_lower in alias:
+            return standard
+
+    # Default to Other
+    return "Other"
+
+
 def _parse_inline_formatting(text):
     """
     Parse inline markdown formatting and convert to Notion rich_text array.
@@ -1358,8 +1438,9 @@ class NotionAgent:
         # assemble topics (sanitize to remove commas)
         topics_list = [{"name": _sanitize_multi_select_name(t)} for t in topics]
 
-        # assemble category (multi-select, sanitize to remove commas)
-        categories_list = [{"name": _sanitize_multi_select_name(c)} for c in categories]
+        # assemble category (multi-select, normalize and sanitize)
+        normalized_categories = list(set(_normalize_category(c) for c in categories))
+        categories_list = [{"name": _sanitize_multi_select_name(c)} for c in normalized_categories]
 
         properties = {
             "Name": {
@@ -1508,8 +1589,9 @@ class NotionAgent:
         # assemble topics (sanitize to remove commas)
         topics_list = [{"name": _sanitize_multi_select_name(t)} for t in topics]
 
-        # assemble category (multi-select, sanitize to remove commas)
-        categories_list = [{"name": _sanitize_multi_select_name(c)} for c in categories]
+        # assemble category (multi-select, normalize and sanitize)
+        normalized_categories = list(set(_normalize_category(c) for c in categories))
+        categories_list = [{"name": _sanitize_multi_select_name(c)} for c in normalized_categories]
 
         properties["Source"] = {
             "select": {
@@ -1576,8 +1658,9 @@ class NotionAgent:
         # assemble topics (sanitize to remove commas)
         topics_list = [{"name": _sanitize_multi_select_name(t)} for t in topics]
 
-        # assemble category (multi-select, sanitize to remove commas)
-        categories_list = [{"name": _sanitize_multi_select_name(c)} for c in categories]
+        # assemble category (multi-select, normalize and sanitize)
+        normalized_categories = list(set(_normalize_category(c) for c in categories))
+        categories_list = [{"name": _sanitize_multi_select_name(c)} for c in normalized_categories]
 
         list_names = kwargs.setdefault("list_names", [])
         source_list_names = [{"name": ln} for ln in list_names]

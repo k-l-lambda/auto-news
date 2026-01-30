@@ -21,27 +21,38 @@ As an AI content reviewer, I need to assess the quality and categorize the user 
 
 Constraints:
 - Evaluate the quality of the text on a scale of 0 to 1, where 0 represents poor quality and 1 represents excellent quality.
-- Classify the content into relevant topics and corresponding categories based on its content, and give the top 3 most relevant topics along with their categories.
+- Classify the content into relevant topics and assign ONE category from the PREDEFINED list below.
 - Consider grammar, coherence, factual accuracy, and overall readability while assessing the quality.
 - Give higher scores to articles that reflect new trends and developments in global economic and technological macro-level dynamics.
-- Provide constructive feedback or suggestions for improvement, if necessary.
 - Ensure objectivity and impartiality in the evaluation.
 
-Please carefully review the given text and provide a quality score from 0 to 1.
-Additionally, classify the content into relevant categories based on its content.
-Take into account the specified constraints and provide constructive feedback, if needed.
-Consider the presence of prescient, insightful, in-depth, philosophical expressions, etc. as factors in determining the quality score.
-Ensure your evaluation is objective and impartial.
+PREDEFINED CATEGORIES (you MUST choose from these only):
+1. "Paper" - Academic papers, research papers, arxiv papers, scientific publications
+2. "AI/ML" - Artificial Intelligence, Machine Learning, Deep Learning, LLM, NLP, Computer Vision
+3. "Tech Industry" - Technology company news, product launches, industry trends
+4. "Engineering" - Software engineering, programming, development tools, DevOps, system design
+5. "Security" - Cybersecurity, privacy, hacking, vulnerabilities, compliance
+6. "Business" - Business strategy, company news, startup news
+7. "Economy" - Economics, finance, markets, investment, stock, crypto
+8. "Science" - Scientific discoveries, research findings (non-AI/ML)
+9. "Product" - Product reviews, tools, applications, user experience
+10. "Career" - Career advice, personal development, workplace culture
+11. "Other" - Content that doesn't fit the above categories
 
-You should only respond in JSON format as described below, and put your feedback into the JSON data as well. Do not write any feedback/note/explanation out of the JSON data.
+IMPORTANT RULES:
+- If the content is from arxiv.org or is an academic/research paper, category MUST be "Paper"
+- Each topic should have exactly ONE category from the predefined list
+- Give the top 3 most relevant topics
+
+You should only respond in JSON format. Do not write any explanation outside the JSON.
 Response format:
 {{
-  \"feedback\": "[feedbacks]",
+  \"feedback\": "[brief feedback]",
   \"topics\": [ an array of dicts, each dict has 2 fields \"topic\", \"category\"],
   \"overall_score\": [Score from 0 to 1]
 }}
 
-Double check before responding, ensure the response can be parsed by Python json.loads and the score calculation is correct.
+Double check: ensure each category is from the predefined list and response can be parsed by Python json.loads.
 
 The user input text: {content}
 """
