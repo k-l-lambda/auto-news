@@ -43,7 +43,7 @@ class OperatorDailyDigest(OperatorBase):
         print("#####################################################")
         print("# Pulling Pages for Daily Digest")
         print("#####################################################")
-        sources = kwargs.get("sources", ["Article", "RSS", "Twitter", "Reddit", "Youtube"])
+        sources = kwargs.get("sources", ["Article", "RSS", "Twitter", "Reddit", "Youtube", "Web"])
         hours_back = kwargs.get("hours_back", 24)
 
         # Calculate the cutoff time

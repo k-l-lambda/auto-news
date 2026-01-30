@@ -19,7 +19,7 @@ parser.add_argument("--job-id", help="job-id",
 parser.add_argument("--data-folder", help="data folder to save",
                     default="data/daily_digest")
 parser.add_argument("--sources", help="sources to pull, comma separated",
-                    default="Article,RSS,Twitter,Reddit,Youtube")
+                    default="Article,RSS,Twitter,Reddit,Youtube,Web")
 parser.add_argument("--hours-back", help="hours to look back",
                     type=int, default=24)
 parser.add_argument("--min-rating", help="minimum rating to include",

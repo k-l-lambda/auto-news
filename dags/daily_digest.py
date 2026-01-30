@@ -24,7 +24,7 @@ with DAG(
     'daily_digest',
     default_args=default_args,
     max_active_runs=1,
-    description='Daily news digest from ToRead items. Config: {"sources": "Article,RSS,Twitter,Reddit,Youtube", "targets": "notion", "hours_back": 24, "min_rating": 3}',
+    description='Daily news digest from ToRead items. Config: {"sources": "Article,RSS,Twitter,Reddit,Youtube,Web", "targets": "notion", "hours_back": 24, "min_rating": 3}',
     # Schedule at 22:00 UTC = 6:00 AM SGT (UTC+8)
     # Note: Actual timezone is configurable via DAILY_DIGEST_TIMEZONE env var
     schedule_interval="0 22 * * *",
@@ -50,7 +50,7 @@ with DAG(
         '--run-id={{ run_id }} '
         '--job-id={{ ti.job_id }} '
         '--data-folder=data/daily_digest '
-        '--sources={{ dag_run.conf.setdefault("sources", "Article,RSS,Twitter,Reddit,Youtube") }} '
+        '--sources={{ dag_run.conf.setdefault("sources", "Article,RSS,Twitter,Reddit,Youtube,Web") }} '
         '--hours-back={{ dag_run.conf.setdefault("hours_back", 24) }} '
         '--min-rating={{ dag_run.conf.setdefault("min_rating", 3) }} '
     )
