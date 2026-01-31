@@ -2438,12 +2438,32 @@ class NotionAgent:
 
         print(f"[Notion.DailyDigest] Creating page with {len(blocks)} blocks")
 
-        # Create the page
+        # Notion API has a limit of 100 children blocks per page creation
+        # If we have more blocks, we need to create the page with first 100
+        # and then append the rest using blocks.children.append
+        BLOCK_LIMIT = 100
+        initial_blocks = blocks[:BLOCK_LIMIT]
+        remaining_blocks = blocks[BLOCK_LIMIT:]
+
+        # Create the page with first 100 blocks
         new_page = self.api.pages.create(
             parent={"database_id": database_id},
             properties=properties,
-            children=blocks
+            children=initial_blocks
         )
+
+        # Append remaining blocks in batches of 100
+        if remaining_blocks:
+            page_id = new_page["id"]
+            print(f"[Notion.DailyDigest] Appending {len(remaining_blocks)} additional blocks")
+
+            for i in range(0, len(remaining_blocks), BLOCK_LIMIT):
+                batch = remaining_blocks[i:i+BLOCK_LIMIT]
+                self.api.blocks.children.append(
+                    block_id=page_id,
+                    children=batch
+                )
+                print(f"[Notion.DailyDigest] Appended batch of {len(batch)} blocks")
 
         return new_page
 
