@@ -6,7 +6,7 @@ import pytz
 import utils
 from notion import NotionAgent
 from ops_base import OperatorBase
-from db_cli import DBClient
+from mysql_cli import MySQLClient
 from ops_notion import OperatorNotion
 import llm_prompts
 from llm_agent import (
@@ -344,8 +344,17 @@ class OperatorDailyDigest(OperatorBase):
         database_id = os.getenv("NOTION_DATABASE_ID_DAILY_DIGEST")
 
         if not database_id:
+            # Try to get daily_digest_db_id from indexes
+            db_client = MySQLClient()
+            indexes = db_client.index_pages_table_load()
+            daily_digest_index = indexes.get("notion", {}).get("daily_digest_db_id", {})
+            if daily_digest_index:
+                database_id = daily_digest_index.get("index_id")
+                print(f"Using daily_digest_db_id from indexes: {database_id}")
+
+        if not database_id:
             # Fallback to ToRead database
-            print("[WARN] NOTION_DATABASE_ID_DAILY_DIGEST not set, falling back to ToRead")
+            print("[WARN] No Daily Digest database found, falling back to ToRead")
             db_index_id = self.op_notion.get_index_toread_dbid()
             database_id = utils.get_notion_database_id_toread(
                 self.notion_agent, db_index_id)
