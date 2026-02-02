@@ -2,6 +2,7 @@ import argparse
 import os
 from datetime import date, datetime
 
+import pytz
 from dotenv import load_dotenv
 
 from ops_daily_digest import OperatorDailyDigest
@@ -36,8 +37,19 @@ def generate_digest(args, op, pages):
     print("######################################################")
     print("# Generate Daily Digest")
     print("######################################################")
+
+    # Use current date in configured timezone for the title
+    # This ensures the digest title matches when it's actually delivered (e.g., 6:00 AM SGT)
+    tz_name = os.getenv("DAILY_DIGEST_TIMEZONE", "UTC")
+    try:
+        tz = pytz.timezone(tz_name)
+    except Exception:
+        tz = pytz.UTC
+    today = datetime.now(tz).strftime("%Y-%m-%d")
+    print(f"Using today's date in {tz_name}: {today}")
+
     categorized = op.categorize_pages(pages)
-    digest = op.generate_digest(categorized, today=args.start)
+    digest = op.generate_digest(categorized, today=today)
     return digest
 
 
@@ -54,7 +66,15 @@ def run(args):
     exec_date = date.fromisoformat(args.start)
     workdir = os.getenv("WORKDIR")
 
-    print(f"Targets: {targets}, exec_date: {exec_date}, workdir: {workdir}")
+    # Use current date in configured timezone for the title
+    tz_name = os.getenv("DAILY_DIGEST_TIMEZONE", "UTC")
+    try:
+        tz = pytz.timezone(tz_name)
+    except Exception:
+        tz = pytz.UTC
+    today = datetime.now(tz).strftime("%Y-%m-%d")
+
+    print(f"Targets: {targets}, exec_date: {exec_date}, today: {today}, workdir: {workdir}")
 
     op = OperatorDailyDigest()
     pages = load_data(args, op)
@@ -62,11 +82,11 @@ def run(args):
     if not pages:
         print("[INFO] No pages to digest, creating empty digest")
         digest = {
-            "title": f"Daily Digest - {args.start}",
+            "title": f"Daily Digest - {today}",
             "content": "No significant news items found for this period.",
             "translation": "",
             "sources": {},
-            "date": args.start,
+            "date": today,
         }
     else:
         digest = generate_digest(args, op, pages)
