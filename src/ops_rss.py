@@ -204,12 +204,16 @@ class OperatorRSS(WebCollectorBase):
             else:
                 print(f"Fetching RSS: {name}, url: {url}")
 
-            articles = self._fetch_articles(name, url, count=3, rss_config=rss_config if has_enhanced else None)
-            print(f"Fetched {len(articles)} articles")
+            try:
+                articles = self._fetch_articles(name, url, count=3, rss_config=rss_config if has_enhanced else None)
+                print(f"Fetched {len(articles)} articles")
 
-            for article in articles:
-                page_id = article["id"]
-                pages[page_id] = article
+                for article in articles:
+                    page_id = article["id"]
+                    pages[page_id] = article
+            except Exception as e:
+                print(f"[ERROR] Failed to fetch RSS from {name} ({url}): {e}")
+                print(f"[INFO] Continuing with other RSS sources...")
 
         return pages
 
