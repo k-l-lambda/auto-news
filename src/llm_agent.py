@@ -229,22 +229,31 @@ class LLMAgentBase:
         # TODO: support non-openAI llm
         if provider == "openai":
             model_name = model_name or os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-            request_timeout = int(os.getenv("LLM_REQUEST_TIMEOUT", "180"))
-            max_retries = int(os.getenv("LLM_MAX_RETRIES", "2"))
+            # Use float for timeout, set both connect and read timeout
+            # Hardcoded to 300s to avoid env reload issues
+            timeout_seconds = float(os.getenv("LLM_REQUEST_TIMEOUT", "300"))
+            request_timeout = httpx.Timeout(timeout_seconds, connect=60.0)
+            max_retries = int(os.getenv("LLM_MAX_RETRIES", "3"))
             if os.getenv('OPENAI_PROXY') is not None:
-                client = httpx.Client(proxies={"http://": os.getenv("OPENAI_PROXY"),
-                                               "https://": os.getenv("OPENAI_PROXY")})
+                client = httpx.Client(
+                    proxies={"http://": os.getenv("OPENAI_PROXY"),
+                             "https://": os.getenv("OPENAI_PROXY")},
+                    timeout=request_timeout)
                 llm = ChatOpenAI(
                     model_name=model_name,
                     http_client=client,
                     temperature=temperature,
-                    request_timeout=request_timeout,
+                    timeout=request_timeout,
                     max_retries=max_retries)
             else:
+                # Create httpx client without system proxy (trust_env=False)
+                # to avoid HTTP_PROXY/HTTPS_PROXY causing timeouts
+                client = httpx.Client(timeout=request_timeout, trust_env=False)
                 llm = ChatOpenAI(
                     model_name=model_name,
+                    http_client=client,
                     temperature=temperature,
-                    request_timeout=request_timeout,
+                    timeout=request_timeout,
                     max_retries=max_retries)
 
         elif provider == "google":

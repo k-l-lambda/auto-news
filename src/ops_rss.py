@@ -205,7 +205,7 @@ class OperatorRSS(WebCollectorBase):
                 print(f"Fetching RSS: {name}, url: {url}")
 
             try:
-                articles = self._fetch_articles(name, url, count=3, rss_config=rss_config if has_enhanced else None)
+                articles = self._fetch_articles(name, url, count=100, rss_config=rss_config if has_enhanced else None)
                 print(f"Fetched {len(articles)} articles")
 
                 for article in articles:

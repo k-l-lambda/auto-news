@@ -162,9 +162,14 @@ def process_rss(args):
         max_distance=args.max_distance)
 
     # Pick top k articles after scoring
-    data_filtered = op.filter(data_scored, k=30, min_score=4)
+    data_filtered = op.filter(data_scored, k=50, min_score=4)
     data_summarized = op.summarize(data_filtered)
     data_ranked = op.rank(data_summarized)
+
+    # Filter by LLM rating score (min 0.85)
+    min_llm_score = 0.85
+    data_ranked = [p for p in data_ranked if p.get("__rate", 0) >= min_llm_score or p.get("__rate", 0) < 0]
+    print(f"After LLM score filter (>= {min_llm_score}): {len(data_ranked)} articles")
 
     targets = args.targets.split(",")
     pushed_stats = op.push(data_ranked, targets)
