@@ -257,8 +257,12 @@ class OperatorDailyDigest(OperatorBase):
         else:
             prompt_template = llm_prompts.LLM_PROMPT_DAILY_DIGEST
 
+        # Escape curly braces in content to avoid LangChain PromptTemplate errors
+        # (LaTeX expressions like {\\lceil n/2\\rceil} would be interpreted as variables)
+        escaped_content = combined_content.replace("{", "{{").replace("}", "}}")
+
         # Fill in the template variables
-        prompt = prompt_template.replace("{content}", combined_content)
+        prompt = prompt_template.replace("{content}", escaped_content)
         prompt = prompt.replace("{source_count}", str(total_count))
         prompt = prompt.replace("{source_names}", source_names)
 
@@ -276,7 +280,9 @@ class OperatorDailyDigest(OperatorBase):
         else:
             title_prompt = llm_prompts.LLM_PROMPT_DAILY_DIGEST_TITLE
 
-        title_prompt = title_prompt.replace("{content}", digest_content[:1000])
+        # Escape curly braces in digest content for title prompt
+        escaped_digest = digest_content[:1000].replace("{", "{{").replace("}", "}}")
+        title_prompt = title_prompt.replace("{content}", escaped_digest)
 
         llm_agent_title = LLMAgentGeneric()
         llm_agent_title.init_prompt(title_prompt)
