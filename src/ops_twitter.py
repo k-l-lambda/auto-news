@@ -14,6 +14,7 @@ import utils
 from ops_base import OperatorBase
 from db_cli import DBClient
 from ops_milvus import OperatorMilvus
+from embedding_agent import EmbeddingAgent
 from ops_notion import OperatorNotion
 from ops_stats import OpsStats
 
@@ -290,6 +291,7 @@ class OperatorTwitter(OperatorBase):
 
         op_milvus = OperatorMilvus()
         client = DBClient()
+        emb_agent = EmbeddingAgent()  # Reuse embedding agent across all tweets
 
         scored_pages = {}
 
@@ -307,7 +309,8 @@ class OperatorTwitter(OperatorBase):
                     # Notes: k = 10 looks too noisy, tune k = 2
                     relevant_metas = op_milvus.get_relevant(
                         start_date, text, topk=2,
-                        max_distance=max_distance, db_client=client)
+                        max_distance=max_distance, db_client=client,
+                        emb_agent=emb_agent)
 
                     page_score = op_milvus.score(relevant_metas)
 

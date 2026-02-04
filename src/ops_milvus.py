@@ -119,10 +119,12 @@ class OperatorMilvus:
         topk: int = 2,
         max_distance: float = 0.45,
         db_client=None,
-        fallback=None
+        fallback=None,
+        emb_agent=None
     ):
         """
         @param max_distance - filter out if distance > max_distance
+        @param emb_agent - optional EmbeddingAgent instance for reuse
 
         Notes: distance is in [0.0, 1.0], tune the max_distance for best
         needs
@@ -133,7 +135,8 @@ class OperatorMilvus:
         # print("# Get relevant Milvus pages")
         # print("#####################################################")
 
-        emb_agent = EmbeddingAgent()
+        if emb_agent is None:
+            emb_agent = EmbeddingAgent()
 
         collection_name = emb_agent.getname(start_date)
         print(f"[get_relevant] collection_name: {collection_name}")
