@@ -173,3 +173,6 @@ helm/charts
 
 *.local.*
 *.local
+
+/scripts/daily_check.sh
+/scripts/auto-news-daily-check.service

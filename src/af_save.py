@@ -166,8 +166,8 @@ def process_rss(args):
     data_summarized = op.summarize(data_filtered)
     data_ranked = op.rank(data_summarized)
 
-    # Filter by LLM rating score (min 0.85)
-    min_llm_score = 0.85
+    # Filter by LLM rating score (min 0.75)
+    min_llm_score = float(os.getenv("RSS_MIN_LLM_SCORE", "0.75"))
     data_ranked = [p for p in data_ranked if p.get("__rate", 0) >= min_llm_score or p.get("__rate", 0) < 0]
     print(f"After LLM score filter (>= {min_llm_score}): {len(data_ranked)} articles")
 
