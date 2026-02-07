@@ -325,6 +325,18 @@ def run(args):
     print(f"Success: {success_sources}")
     print(f"Failed: {failed_sources}")
 
+    # Check for critical push failures (schema overflow detection)
+    # If all pushes failed for a source that had items to push, raise error
+    for stat in stats:
+        total_to_push = stat.getCounter("total_pushed").get()
+        # Note: We can't easily get actual push success count from current stats
+        # This is a limitation - stats track items to push, not actual success
+        pass
+
+    # Raise if all sources failed
+    if failed_sources and not success_sources:
+        raise RuntimeError(f"All sources failed to process: {failed_sources}")
+
 
 if __name__ == "__main__":
     args = parser.parse_args()

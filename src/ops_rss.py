@@ -586,7 +586,19 @@ class OperatorRSS(WebCollectorBase):
                         stat["error"] += 1
                         traceback.print_exc()
 
+                        # Check for schema overflow - this is a critical error
+                        error_str = str(e).lower()
+                        if "database schema has exceeded" in error_str:
+                            stat["schema_overflow"] = True
+
             else:
                 print(f"[ERROR]: Unknown target {target}, skip")
+
+        # Raise critical error if schema overflow detected
+        if stat.get("schema_overflow"):
+            raise RuntimeError(
+                "CRITICAL: Notion database schema overflow. "
+                "Run health_check.py or create_toread_db.py to create a new database."
+            )
 
         return stat
