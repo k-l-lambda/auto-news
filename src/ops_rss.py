@@ -582,23 +582,36 @@ class OperatorRSS(WebCollectorBase):
                         self.markVisited(page_id, source="rss", list_name=list_name)
 
                     except Exception as e:
-                        print(f"[ERROR]: Push to notion failed, skip: {e}")
-                        stat["error"] += 1
-                        traceback.print_exc()
+                        if self._is_schema_overflow(e):
+                            print(f"[WARN] Schema overflow detected, auto-fixing...")
+                            new_db_id = self._auto_fix_schema_overflow()
 
-                        # Check for schema overflow - this is a critical error
-                        error_str = str(e).lower()
-                        if "database schema has exceeded" in error_str:
-                            stat["schema_overflow"] = True
+                            if new_db_id:
+                                database_id = new_db_id
+
+                                try:
+                                    notion_agent.createDatabaseItem_ToRead_RSS(
+                                        database_id,
+                                        page,
+                                        topics_topk,
+                                        categories_topk,
+                                        rating)
+
+                                    self.markVisited(page_id, source="rss", list_name=list_name)
+                                except Exception as retry_err:
+                                    print(f"[ERROR] Retry after auto-fix failed: {retry_err}")
+                                    traceback.print_exc()
+                                    stat["error"] += 1
+                            else:
+                                print("[ERROR] Auto-fix failed, cannot continue pushing")
+                                stat["error"] += 1
+                                stat["schema_overflow"] = True
+                        else:
+                            print(f"[ERROR]: Push to notion failed, skip: {e}")
+                            stat["error"] += 1
+                            traceback.print_exc()
 
             else:
                 print(f"[ERROR]: Unknown target {target}, skip")
-
-        # Raise critical error if schema overflow detected
-        if stat.get("schema_overflow"):
-            raise RuntimeError(
-                "CRITICAL: Notion database schema overflow. "
-                "Run health_check.py or create_toread_db.py to create a new database."
-            )
 
         return stat

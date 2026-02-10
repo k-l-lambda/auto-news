@@ -13,6 +13,40 @@ class OperatorBase:
     """
     Operator Base class
     """
+    # Class-level flag: once schema overflow is fixed in this process,
+    # skip calling create_toread_database again and just return the new ID.
+    _schema_overflow_fixed = False
+    _new_database_id = None
+
+    def _auto_fix_schema_overflow(self):
+        """Auto-create a new ToRead database when schema overflow is detected.
+
+        Returns the new database ID, or None if the fix failed.
+        Uses a class-level flag so the DB is only created once per process.
+        """
+        if OperatorBase._schema_overflow_fixed:
+            print(f"[AUTO-FIX] Already fixed this run, reusing DB: {OperatorBase._new_database_id}")
+            return OperatorBase._new_database_id
+
+        try:
+            from create_toread_db import create_toread_database
+            new_db_id = create_toread_database()
+            if new_db_id:
+                OperatorBase._schema_overflow_fixed = True
+                OperatorBase._new_database_id = new_db_id
+                print(f"[AUTO-FIX] Created new ToRead database: {new_db_id}")
+                return new_db_id
+            else:
+                print("[ERROR] Auto-fix: create_toread_database returned None")
+                return None
+        except Exception as e:
+            print(f"[ERROR] Auto-fix failed: {e}")
+            return None
+
+    @staticmethod
+    def _is_schema_overflow(error):
+        """Check if an exception is a Notion schema overflow error."""
+        return "database schema has exceeded" in str(error).lower()
 
     def pull(self):
         return None

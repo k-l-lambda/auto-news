@@ -17,6 +17,9 @@ def create_toread_database(month_name=None):
     Args:
         month_name: Optional month name in YYYY-MM format.
                    If not provided, uses current month.
+
+    Returns:
+        The new database ID string on success, or None on failure.
     """
     load_dotenv()
 
@@ -38,7 +41,7 @@ def create_toread_database(month_name=None):
 
     if not toread_page_id or not index_toread_db_id:
         print("[ERROR] Missing toread_page_id or index_toread_db_id in indexes")
-        return False
+        return None
 
     # Determine the month name for the database
     if not month_name:
@@ -75,7 +78,7 @@ def create_toread_database(month_name=None):
     )
     print(f"Done! Created and indexed ToRead database for {month_name}")
 
-    return True
+    return toread_db_id
 
 
 if __name__ == "__main__":

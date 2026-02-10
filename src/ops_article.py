@@ -336,9 +336,50 @@ class OperatorArticle(OperatorBase):
                             list_name="default")
 
                     except Exception as e:
-                        print(f"[ERROR]: Push to notion failed, skip: {e}")
-                        traceback.print_exc()
-                        stat["error"] += 1
+                        if self._is_schema_overflow(e):
+                            print(f"[WARN] Schema overflow detected, auto-fixing...")
+                            new_db_id = self._auto_fix_schema_overflow()
+
+                            if new_db_id:
+                                database_id = new_db_id
+
+                                try:
+                                    new_page = notion_agent.createDatabaseItem_ToRead_Article(
+                                        database_id,
+                                        ranked_page,
+                                        topics_topk,
+                                        categories_topk,
+                                        rating)
+
+                                    if ranked_page.get("__arxiv_result"):
+                                        try:
+                                            new_page_id = new_page["id"]
+                                            metadata_text = ranked_page["__arxiv_result"]["metadata_text"]
+                                            notion_agent.createPageComment(
+                                                new_page_id, metadata_text)
+                                        except Exception as comment_err:
+                                            print(f"[WARN] Failed to add Arxiv metadata on retry, skip: {comment_err}")
+
+                                    self.markVisited(page_id, source="article", list_name="default")
+
+                                    created_time = ranked_page["created_time"]
+                                    self.updateCreatedTime(
+                                        created_time,
+                                        source="article",
+                                        list_name="default")
+
+                                except Exception as retry_err:
+                                    print(f"[ERROR] Retry after auto-fix failed: {retry_err}")
+                                    traceback.print_exc()
+                                    stat["error"] += 1
+                            else:
+                                print("[ERROR] Auto-fix failed, cannot continue pushing")
+                                stat["error"] += 1
+                                stat["schema_overflow"] = True
+                        else:
+                            print(f"[ERROR]: Push to notion failed, skip: {e}")
+                            traceback.print_exc()
+                            stat["error"] += 1
 
             else:
                 print(f"[ERROR]: Unknown target {target}, skip")
