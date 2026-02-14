@@ -91,7 +91,7 @@ class OperatorDailyDigest(OperatorBase):
                     database_id,
                     source,
                     last_edited_time=cutoff_time_iso,
-                    extraction_interval=0.02,
+                    extraction_interval=0.5,
                     require_user_rating=False)
 
                 print(f"Pulled {len(pages)} pages for source: {source}")

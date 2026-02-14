@@ -5,6 +5,7 @@ import html
 import traceback
 
 from notion_client import Client
+from notion_client.errors import APIResponseError
 import llm_const
 
 import utils
@@ -283,6 +284,20 @@ class NotionAgent:
     def _init_client(self, api_key):
         return Client(auth=api_key)
 
+    def _call_with_retry(self, func, *args, max_retries=6, base_wait=5, **kwargs):
+        """Call a Notion API function with retry on 429 rate limit errors."""
+        for attempt in range(max_retries):
+            try:
+                return func(*args, **kwargs)
+            except APIResponseError as e:
+                if e.status == 429 and attempt < max_retries - 1:
+                    wait_time = base_wait * (2 ** attempt)
+                    print(f"[WARN] Notion rate limited (429). Attempt {attempt+1}/{max_retries}. "
+                          f"Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                else:
+                    raise
+
     def addDatabase(self, source_name, database_id):
         self.databases[source_name] = {
             "database_id": database_id,
@@ -408,7 +423,8 @@ class NotionAgent:
         # block_id -> block data
         blocks = {}
 
-        childs = self.api.blocks.children.list(block_id=block_id).get("results")
+        childs = self._call_with_retry(
+            self.api.blocks.children.list, block_id=block_id).get("results")
         # print(f"n: {len(childs)}, childs: {childs}")
 
         for block in childs:
@@ -533,7 +549,8 @@ class NotionAgent:
 
             try:
                 print(f"Retrieving {trying_cnt}/{retrieval_retry}, page id: {page_id}")
-                page = self.api.pages.retrieve(page_id=page_id)
+                page = self._call_with_retry(
+                    self.api.pages.retrieve, page_id=page_id)
                 properties = self._extractPageProps(page)
                 break
 
@@ -546,6 +563,7 @@ class NotionAgent:
             return properties, blocks
 
         if extract_blocks:
+            time.sleep(0.3)  # Throttle between API calls to avoid rate limiting
             blocks = self.extractBlocks(page_id)
 
         return properties, blocks
@@ -572,7 +590,8 @@ class NotionAgent:
             }
         }
 
-        pages = self.api.databases.query(**query_data).get("results")
+        pages = self._call_with_retry(
+            self.api.databases.query, **query_data).get("results")
         extracted_pages = []
 
         for page in pages:
@@ -637,7 +656,8 @@ class NotionAgent:
             }
         }
 
-        pages = self.api.databases.query(**query_data).get("results")
+        pages = self._call_with_retry(
+            self.api.databases.query, **query_data).get("results")
         extracted_pages = {}
 
         for page in pages:
@@ -681,7 +701,8 @@ class NotionAgent:
             }
         }
 
-        pages = self.api.databases.query(**query_data).get("results")
+        pages = self._call_with_retry(
+            self.api.databases.query, **query_data).get("results")
         extracted_pages = {}
 
         for page in pages:
@@ -724,7 +745,8 @@ class NotionAgent:
             }
         }
 
-        pages = self.api.databases.query(**query_data).get("results")
+        pages = self._call_with_retry(
+            self.api.databases.query, **query_data).get("results")
         extracted_pages = []
 
         for page in pages:
@@ -752,7 +774,8 @@ class NotionAgent:
             ],
         }
 
-        pages = self.api.databases.query(**query_data).get("results")
+        pages = self._call_with_retry(
+            self.api.databases.query, **query_data).get("results")
         extracted_pages = []
 
         for page in pages:
@@ -799,7 +822,8 @@ class NotionAgent:
                 }
             })
 
-        pages = self.api.databases.query(**query_data).get("results")
+        pages = self._call_with_retry(
+            self.api.databases.query, **query_data).get("results")
 
         extracted_pages = {}
         for page in pages:
@@ -864,7 +888,8 @@ class NotionAgent:
 
         print(f"Query article inbox, query: {query_data}")
 
-        pages = self.api.databases.query(**query_data).get("results")
+        pages = self._call_with_retry(
+            self.api.databases.query, **query_data).get("results")
         print(f"Queried pages: {pages}")
 
         extracted_pages = {}
@@ -962,7 +987,8 @@ class NotionAgent:
                 }
             })
 
-        pages = self.api.databases.query(**query_data).get("results")
+        pages = self._call_with_retry(
+            self.api.databases.query, **query_data).get("results")
 
         extracted_pages = {}
         for page in pages:
@@ -1038,7 +1064,8 @@ class NotionAgent:
 
         print(f"Query Journal inbox, query: {query_data}")
 
-        pages = self.api.databases.query(**query_data).get("results")
+        pages = self._call_with_retry(
+            self.api.databases.query, **query_data).get("results")
         print(f"Queried pages: {pages}")
 
         extracted_pages = {}
