@@ -79,26 +79,39 @@ class OperatorDailyDigest(OperatorBase):
 
         page_list = {}
 
-        for db_page in db_pages:
+        for db_idx, db_page in enumerate(db_pages):
             database_id = db_page["database_id"]
-            print(f"Pulling from database_id: {database_id}...")
+            print(f"Pulling from database_id: {database_id} ({db_idx+1}/{len(db_pages)})...")
+
+            if db_idx > 0:
+                # Longer pause between databases to avoid Notion rate limiting
+                print("Waiting 60s between databases to avoid rate limiting...")
+                time.sleep(60)
 
             for source in sources:
                 print(f"====== Pulling source: {source} ======")
 
-                # Pull pages from cutoff time, don't require user_rating
-                pages = self.notion_agent.queryDatabaseToRead(
-                    database_id,
-                    source,
-                    last_edited_time=cutoff_time_iso,
-                    extraction_interval=1.0,
-                    require_user_rating=False)
+                try:
+                    # Pull pages from cutoff time, don't require user_rating
+                    pages = self.notion_agent.queryDatabaseToRead(
+                        database_id,
+                        source,
+                        last_edited_time=cutoff_time_iso,
+                        extraction_interval=1.5,
+                        require_user_rating=False)
 
-                print(f"Pulled {len(pages)} pages for source: {source}")
-                page_list.update(pages)
+                    print(f"Pulled {len(pages)} pages for source: {source}")
+                    page_list.update(pages)
+                except Exception as e:
+                    print(f"[WARN] Failed to pull source {source} from db {database_id}: {e}")
+                    print(f"[WARN] Continuing with {len(page_list)} pages already pulled")
+                    # Wait extra time after a rate limit error
+                    if "429" in str(e) or "rate limit" in str(e).lower():
+                        print("[WARN] Rate limited - waiting 120s before continuing...")
+                        time.sleep(120)
 
                 # Wait to mitigate rate limiting
-                time.sleep(2)
+                time.sleep(3)
 
         print(f"Pulled total {len(page_list)} items for daily digest")
         return page_list

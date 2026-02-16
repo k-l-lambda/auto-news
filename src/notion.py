@@ -563,7 +563,7 @@ class NotionAgent:
             return properties, blocks
 
         if extract_blocks:
-            time.sleep(0.5)  # Throttle between API calls to avoid rate limiting
+            time.sleep(0.8)  # Throttle between API calls to avoid rate limiting
             blocks = self.extractBlocks(page_id)
 
         return properties, blocks
