@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Create ToRead database and add index entry.
-Run this script at the beginning of each month to create a new monthly ToRead database.
+Run this script when schema overflow is detected or manually to create a new ToRead database.
 """
 import os
 from datetime import datetime
@@ -10,13 +10,13 @@ from notion import NotionAgent
 from mysql_cli import MySQLClient
 
 
-def create_toread_database(month_name=None):
+def create_toread_database(date_name=None):
     """
-    Create a new ToRead database for the specified month.
+    Create a new ToRead database for the specified date.
 
     Args:
-        month_name: Optional month name in YYYY-MM format.
-                   If not provided, uses current month.
+        date_name: Optional date string in YYYY-MM-DD format.
+                   If not provided, uses current date.
 
     Returns:
         The new database ID string on success, or None on failure.
@@ -43,11 +43,11 @@ def create_toread_database(month_name=None):
         print("[ERROR] Missing toread_page_id or index_toread_db_id in indexes")
         return None
 
-    # Determine the month name for the database
-    if not month_name:
-        month_name = datetime.now().strftime("%Y-%m")
+    # Determine the date name for the database
+    if not date_name:
+        date_name = datetime.now().strftime("%Y-%m-%d")
 
-    db_name = f"ToRead - {month_name}"
+    db_name = f"ToRead - {date_name}"
     print(f"Creating ToRead database: {db_name}")
 
     # Create the new ToRead database
@@ -76,15 +76,15 @@ def create_toread_database(month_name=None):
         parent={"database_id": index_toread_db_id},
         properties=properties
     )
-    print(f"Done! Created and indexed ToRead database for {month_name}")
+    print(f"Done! Created and indexed ToRead database for {date_name}")
 
     return toread_db_id
 
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Create monthly ToRead database")
-    parser.add_argument("--month", help="Month in YYYY-MM format (default: current month)")
+    parser = argparse.ArgumentParser(description="Create ToRead database")
+    parser.add_argument("--date", help="Date in YYYY-MM-DD format (default: today)")
     args = parser.parse_args()
 
-    create_toread_database(args.month)
+    create_toread_database(args.date)
