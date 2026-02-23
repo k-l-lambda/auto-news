@@ -135,33 +135,46 @@ def run(args):
     sources = args.sources.split(",")
     print(f"Sources: {sources}")
 
+    failed_sources = []
+
     for source in sources:
         print(f"Pulling from source: {source} ...")
 
-        if source == "Twitter":
-            op = OperatorTwitter()
-            data = pull_twitter(args, op, source)
-            save_twitter(args, op, source, data)
+        try:
+            if source == "Twitter":
+                op = OperatorTwitter()
+                data = pull_twitter(args, op, source)
+                save_twitter(args, op, source, data)
 
-        elif source == "Article":
-            op = OperatorArticle()
-            data = pull_article(args, op, source)
-            save_article(args, op, source, data)
+            elif source == "Article":
+                op = OperatorArticle()
+                data = pull_article(args, op, source)
+                save_article(args, op, source, data)
 
-        elif source == "Youtube":
-            op = OperatorYoutube()
-            data = pull_youtube(args, op, source)
-            save_youtube(args, op, source, data)
+            elif source == "Youtube":
+                op = OperatorYoutube()
+                data = pull_youtube(args, op, source)
+                save_youtube(args, op, source, data)
 
-        elif source == "RSS":
-            op = OperatorRSS()
-            data = pull_rss(args, op, source)
-            save_rss(args, op, source, data)
+            elif source == "RSS":
+                op = OperatorRSS()
+                data = pull_rss(args, op, source)
+                save_rss(args, op, source, data)
 
-        elif source == "Reddit":
-            op = OperatorReddit()
-            data = pull_reddit(args, op, source)
-            save_reddit(args, op, source, data)
+            elif source == "Reddit":
+                op = OperatorReddit()
+                data = pull_reddit(args, op, source)
+                save_reddit(args, op, source, data)
+
+        except Exception as e:
+            print(f"[WARN] Failed to sync source {source}: {e}")
+            print(f"[WARN] Continuing with remaining sources...")
+            failed_sources.append(source)
+
+    if failed_sources:
+        print(f"[WARN] Sync completed with failures in: {', '.join(failed_sources)}")
+    else:
+        print("Sync completed successfully for all sources")
 
 
 if __name__ == "__main__":
