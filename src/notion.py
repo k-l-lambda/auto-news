@@ -1722,6 +1722,23 @@ class NotionAgent:
                 "number": ranked_page["__relevant_score"]
             }})
 
+        # Store article source URL in "To" property for downstream consumers
+        source_url = ranked_page.get("url") or ranked_page.get("source_url") or ""
+        if source_url and "To" not in properties:
+            properties.update({
+                "To": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": source_url[:2000],
+                                "link": {"url": source_url},
+                            },
+                            "href": source_url,
+                        },
+                    ]
+                }
+            })
+
         print(f"notion ToRead (post-process): database_id: {database_id}, properties: {properties}, blocks: {blocks}")
 
         # Add the new page to the database
@@ -2275,6 +2292,20 @@ class NotionAgent:
         if category:
             properties["Category"] = {
                 "multi_select": [{"name": category}]
+            }
+
+        # Store article source URL in "To" property
+        if url:
+            properties["To"] = {
+                "rich_text": [
+                    {
+                        "text": {
+                            "content": url[:2000],
+                            "link": {"url": url},
+                        },
+                        "href": url,
+                    },
+                ]
             }
 
         # Build blocks (page content)
