@@ -1733,7 +1733,6 @@ class NotionAgent:
                                 "content": source_url[:2000],
                                 "link": {"url": source_url},
                             },
-                            "href": source_url,
                         },
                     ]
                 }
@@ -2303,7 +2302,6 @@ class NotionAgent:
                             "content": url[:2000],
                             "link": {"url": url},
                         },
-                        "href": url,
                     },
                 ]
             }
