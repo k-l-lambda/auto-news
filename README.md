@@ -1,7 +1,5 @@
 # Auto-News: Automated News Aggregator with LLM
 
-[![GitHub Build](https://github.com/finaldie/auto-news/actions/workflows/python.yml/badge.svg)](https://github.com/finaldie/auto-news/actions)
-
 > Fork of [finaldie/auto-news](https://github.com/finaldie/auto-news) with custom enhancements for personal use.
 
 LLM-powered news aggregation pipeline: RSS/Reddit/Web → Airflow → Notion, with intelligent scoring, filtering, and structured summaries.
