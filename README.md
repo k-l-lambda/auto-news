@@ -1,107 +1,96 @@
-# Auto-News: An Automatic News Aggregator with LLM
+# Auto-News: Automated News Aggregator with LLM
 
 [![GitHub Build](https://github.com/finaldie/auto-news/actions/workflows/python.yml/badge.svg)](https://github.com/finaldie/auto-news/actions)
-![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=Flat&logo=kubernetes&logoColor=white)
-![ChatGPT](https://img.shields.io/badge/chatGPT-74aa9c?style=Flat&logo=openai&logoColor=white)
-![Google Gemini](https://img.shields.io/badge/Google%20Gemini-8A2BE2?style=Flat&logo=googlegemini&logoColor=white)
-![Ollama](https://img.shields.io/badge/Ollama-8A2BE2?style=Flat&logo=ollama&logoColor=white)
-![Notion](https://img.shields.io/badge/Notion-%23000000.svg?style=Flat&logo=notion&logoColor=white)
-![Helm](https://img.shields.io/badge/Helm-0F1689?style=Flat&logo=Helm&labelColor=0F1689)
-[![iOS](https://img.shields.io/itunes/v/6481704531)](https://apps.apple.com/app/dots-agent/id6481704531)
-[![Android](https://img.shields.io/badge/Google_Play-v1.1.2-blue)](https://play.google.com/store/apps/details?id=com.dotsfy.dotsagent)
 
-The ultimate personal productivity content aggregator: Designed to effortlessly navigate and maximize your efficiency in the AI era.
+> Fork of [finaldie/auto-news](https://github.com/finaldie/auto-news) with custom enhancements for personal use.
 
-## Use Cases
+LLM-powered news aggregation pipeline: RSS/Reddit/Web → Airflow → Notion, with intelligent scoring, filtering, and structured summaries.
 
-1. [x] **Super busy but still wants to catch the trends in a few minutes?** `Yes`
-2. [x] **Want to be a super individual, to handle vast amounts of information in the GenAI world?** `Yes`
-3. [x] **Become a super executor, tell less, and achieve more?** `Yes`
+## Architecture
 
-With `auto-news` you'll get:
-- `Faster learning:` Navigate trends and catch up in minutes.
-- `Recap reinforcement:` Smooth and periodic memory recall.
-- `Intelligent actions:` Route actions with a single message.
+```
+RSS / Reddit / Web sources
+        ↓
+   Airflow DAGs (news_pulling, sync_dist)
+        ↓
+   Notion ToRead DB (with LLM scoring & categorization)
+        ↓
+   [OpenClaw Agent — scan, score, pick]
+        ↓
+   Agent Picks DB → Deep Dive / Daily Digest / Weekly Recap
+```
 
-In the AI era, speed and productivity are extremely important. We need AI tools to help us talk less and achieve more!
-
-For more background, see this [Blog post](https://finaldie.com/blog/auto-news-an-automated-news-aggregator-with-llm/) and these videos [Introduction](https://www.youtube.com/watch?v=hKFIyfAF4Z4), [Data flows](https://www.youtube.com/watch?v=WAGlnRht8LE).
-
-[<img src="https://img.youtube.com/vi/hKFIyfAF4Z4/0.jpg" width="80%" />](https://www.youtube.com/watch?v=hKFIyfAF4Z4 "AutoNews Intro on YouTube")
+### Core Components
+- **Airflow Pipeline**: Pulls content from RSS, Reddit, Web sources on schedule
+- **Milvus Vector DB**: Embedding-based similarity scoring for content filtering
+- **MySQL**: Source management, metadata, dedup state
+- **Notion**: Reading interface — ToRead DB (raw articles) + Agent Picks DB (curated)
+- **LLM Backend**: OpenAI GPT / Google Gemini / Ollama for summarization and scoring
 
 ## Features
-- Aggregate feed sources (including RSS, Reddit, Tweets, etc), and proactive generate with insights
-- Generate insights of YouTube videos (Do transcoding if no transcript provided)
-- Generate insights of Web Articles
-- Filter content based on personal interests and remove 80%+ noises
+
+- Aggregate feed sources (RSS, Reddit, Web) with LLM-generated insights
+- YouTube video transcription and summarization
+- Content ranking & classification with vector embeddings
+- Configurable top-k filtering based on personal interests (removes 80%+ noise)
+- Rich text summaries in Notion (Markdown → native Notion blocks: headings, bold, lists)
+- Multi-language summary output (direct generation, no translation step)
 - Weekly Top-k Recap
-- Unified and central reading experience (RSS reader-like style, Notion-based)
-- Generate `TODO` list from takeaways and journal notes
-- Organize Journal notes with insights daily
-- [Multi-Agents] **Experimental** [Deepdive](https://github.com/finaldie/auto-news/wiki/Deepdive-(Experimental)) topic via web search agent and [autogen](https://github.com/microsoft/autogen)
-- Multi-LLM backend: OpenAI ChatGPT, Google Gemini, Ollama
+- Dynamic ToRead DB rotation (auto-create on Notion schema overflow)
 
-<img src="https://github.com/finaldie/auto-news/assets/1088543/778242a7-5811-49e1-8982-8bd32d141639" width="80%" />
+## Fork Enhancements
 
-## Recent Enhancements
+Changes made in this fork on top of upstream:
 
-### Rich Text Summaries in Notion
-- **Markdown to Notion Blocks**: Summaries now render with proper formatting in Notion - headings, bold text, numbered lists, and bullet points are displayed natively instead of plain text
-- **Structured Summary Format**: Each summary includes source attribution, "Why Read This" explanation, and numbered key insights with inline formatting
+### Notion API Resilience
+- Exponential backoff retry on 429 rate limiting (all API paths)
+- `sync_dist` resilient to rate limits during batch sync
+- `daily_digest` increased throttle intervals
+- Auto-fix Notion schema overflow during push
 
-### Multi-Language Support
-- **Direct Target Language Output**: Summaries are generated directly in your configured language (e.g., Chinese) without the previous English + translation format
-- **Localized Titles**: Article titles can be generated in your preferred language
+### Data Quality
+- **Source URL in ToRead**: Article URLs now written to the "To" property (rich_text + href), accessible without parsing page blocks
+- Daily date format (`YYYY-MM-DD`) for ToRead database names
+- Consolidated categories to a fixed set
+- Lowered RSS LLM score threshold from 0.85 → 0.75 (configurable)
 
-### RSS Pipeline Improvements
-- **Content Ranking & Classification**: Articles are now properly ranked and categorized based on topics and relevance scores
-- **Improved Filtering**: Configurable top-k filtering with similarity-based scoring using vector embeddings
-- **Cold Start Support**: Import seed articles (e.g., arXiv papers, reading notes) to bootstrap the recommendation system
+### Bug Fixes
+- Daily Digest crash on LaTeX curly braces in content
+- Daily Digest title uses actual date in configured timezone
+- Correct MySQL client for Daily Digest database selection
+- Notion block limit handling for Daily Digest
+- RSS processing timeout and LLM API resilience
+- Reuse EmbeddingAgent in scoring to avoid repeated model loading
 
-### Web Collector (New)
-- **Simple Web Scraping**: New collector for extracting content from web pages
-- **Browser Mode**: Optional Playwright-based rendering for JavaScript-heavy sites
-- **XPath Extraction**: Custom content selection via XPath expressions
-- **Trafilatura Integration**: Intelligent article content extraction
+## Deployment
 
-### Summary Quality Improvements
-- **Insight-Focused Summaries**: Prompts optimized to extract core ideas, innovations, and actionable insights
-- **Source Attribution**: Summaries identify the original publication/source
-- **Reader Relevance**: Each summary explains why the article might interest the reader (trends, opportunities, implications)
+### System Requirements
 
-## Documentation
-https://github.com/finaldie/auto-news/wiki
-
-## Installation
-### :star: :star: Managed Solution :star: :star:
-Great News! Now we have the in-house managed solution, it is powered by the `auto-news` as the backend. It supports the [Web version](https://dots.dotsfy.com/) and the mobile Apps, download it from `App Store` or `Google Play`, install and enjoy. It is the **quickest** and **easiest** solution for anyone who doesn't want to/or does not have time to set up by themselves. (**Notes:** _App is available in US and Canada at this point_)
-
-<img src="https://github.com/finaldie/auto-news/assets/1088543/3b072078-17eb-4f1d-b301-75bc8295479c" width="80%" />
-
-For more details, please check out the [App official website](https://dotsfy.com/dots-agent/). Click below to install the App directly:
-
-* [Web version (Beta)](https://dots.dotsfy.com/)
-* [![iOS](https://img.shields.io/itunes/v/6481704531)](https://apps.apple.com/app/dots-agent/id6481704531)
-* [![Android](https://img.shields.io/badge/Google_Play-v1.1.2-blue)](https://play.google.com/store/apps/details?id=com.dotsfy.dotsagent)
-
-### Self-Hosted
-The client is using [Notion](https://www.notion.so/), and the backend is fully `self-hosted` by ourselves.
-
-#### Backend System Requirements
 | Component | Minimum      | Recommended  |
-| --------- | -----------  | ----         |
+| --------- | ------------ | ------------ |
 | OS        | Linux, MacOS | Linux, MacOS |
 | CPU       | 2 cores      | 8 cores      |
 | Memory    | 6GB          | 16GB         |
 | Disk      | 20GB         | 100GB        |
 
-#### Docker-compose
-- [Installation using Docker-compose](https://github.com/finaldie/auto-news/wiki/Docker-Installation)
-- [Installation using Portainer](https://github.com/finaldie/auto-news/wiki/Installation-using-Portainer)
+### Docker Compose (recommended)
 
-#### Kubernetes
-- [Installation using Helm](https://github.com/finaldie/auto-news/wiki/Installation-using-Helm)
-- [Installation using ArgoCD](https://github.com/finaldie/auto-news/wiki/Installation-using-ArgoCD)
+```bash
+cd docker
+docker compose up -d
+```
 
-## Issues/Questions?
-Feel free to open an issue and start the conversation.
+Key services: `airflow-worker`, `airflow-scheduler`, `airflow-webserver`, `mysql-db`, `milvus`, `redis`, `postgres`
+
+### Other Options
+- [Docker-compose guide](https://github.com/finaldie/auto-news/wiki/Docker-Installation)
+- [Kubernetes / Helm](https://github.com/finaldie/auto-news/wiki/Installation-using-Helm)
+- [ArgoCD](https://github.com/finaldie/auto-news/wiki/Installation-using-ArgoCD)
+
+## Documentation
+
+See the upstream wiki: https://github.com/finaldie/auto-news/wiki
+
+## Credits
+
+Based on [auto-news](https://github.com/finaldie/auto-news) by [finaldie](https://github.com/finaldie).
