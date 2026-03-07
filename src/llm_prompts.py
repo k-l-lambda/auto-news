@@ -92,7 +92,7 @@ LLM_PROMPT_SUMMARY_COMBINE_PROMPT3 = """
 As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text. Use Markdown formatting.
 
 Guidelines:
-- Start with a brief mention of the source/publication if identifiable from the text
+- Start with the source/publication AND author information: for academic papers, include author names and their affiliations/institutions (e.g., "John Doe et al., Google DeepMind"); for blog posts, include the author/team and their organization; for news articles, include the media outlet and reporter name if available
 - Extract key innovations, breakthroughs, or novel perspectives
 - Highlight implications for global economic trends, technological developments, or scientific progress
 - Include actionable insights or strategic takeaways
@@ -108,7 +108,7 @@ Avoid:
 - Surface-level observations without depth
 
 Output Format (use Markdown):
-## [Source: XXX]
+## [Source: Publication — Author(s), Affiliation]
 
 **Why Read This:** [Brief explanation]
 
@@ -171,7 +171,7 @@ LLM_PROMPT_SUMMARY_TARGET_LANG = """
 As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text. Write your summary in {} using Markdown formatting.
 
 Guidelines:
-- Start with a brief mention of the source/publication if identifiable from the text
+- Start with the source/publication AND author information: for academic papers, include author names and their affiliations/institutions (e.g., "John Doe et al., Google DeepMind"); for blog posts, include the author/team and their organization; for news articles, include the media outlet and reporter name if available
 - Extract key innovations, breakthroughs, or novel perspectives
 - Highlight implications for global economic trends, technological developments, or scientific progress
 - Include actionable insights or strategic takeaways
@@ -187,7 +187,7 @@ Avoid:
 - Surface-level observations without depth
 
 Output Format (use Markdown):
-## [Source: XXX]
+## [Source: Publication — Author(s), Affiliation]
 
 **Why Read This:** [Brief explanation in {}]
 
