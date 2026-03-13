@@ -278,6 +278,7 @@ class LLMAgentBase:
             raise
 
         self.llm = llm
+        self.model_name = model_name
 
         # Create a default chain using RunnableSequence pattern
         if create_default_chain:
