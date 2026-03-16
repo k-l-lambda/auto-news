@@ -171,13 +171,15 @@ LLM_PROMPT_SUMMARY_TARGET_LANG = """
 As an expert analyst, extract and summarize the core ideas and most valuable insights from the following text. Write your summary in {} using Markdown formatting.
 
 Guidelines:
-- Start with the source/publication AND author information: for academic papers, include author names and their affiliations/institutions (e.g., "John Doe et al., Google DeepMind"); for blog posts, include the author/team and their organization; for news articles, include the media outlet and reporter name if available
+- The ENTIRE output must be written in {}. Do not leave any section headings, labels, bullet prefixes, or explanatory sentences in English unless they are part of an original proper noun, company name, product name, paper title, or directly quoted source text.
+- Translate section headers and field labels into natural {}. For example, do NOT output headings like "Why Read This" or "Key Insights"; use natural {} headings instead.
+- Start with the source/publication AND author information: for academic papers, include author names and their affiliations/institutions; for blog posts, include the author/team and their organization; for news articles, include the media outlet and reporter name if available
 - Extract key innovations, breakthroughs, or novel perspectives
 - Highlight implications for global economic trends, technological developments, or scientific progress
 - Include actionable insights or strategic takeaways
 - Cite specific data, statistics, or concrete examples that support the main arguments
 - Note any counterintuitive findings or paradigm-shifting ideas
-- Explain WHY this article might interest the reader (e.g., emerging trends, investment opportunities, career implications, or industry disruption)
+- Explain why this article might interest the reader
 - Use **bold** for key terms and important points
 - Use separate paragraphs for different sections
 
@@ -185,19 +187,19 @@ Avoid:
 - Generic descriptions or background information that adds no value
 - Repetitive or redundant points
 - Surface-level observations without depth
+- Any English section titles or labels when the target language is {}
 
-Output Format (use Markdown):
-## [Source: Publication — Author(s), Affiliation]
+Output Format (use Markdown, but with headings written in natural {}):
+## [来源：出版物／作者／机构]
 
-**Why Read This:** [Brief explanation in {}]
+**为什么值得读：** [用{}简要说明]
 
-### Key Insights
+### 核心洞察
 
-1. **[Key Point 1]**: [Explanation]
+1. **[要点1]**：[说明]
+2. **[要点2]**：[说明]
 
-2. **[Key Point 2]**: [Explanation]
-
-... (3-7 points total, each substantive and insightful)
+...（共 3-7 点，每点都要有实质内容）
 
 Content to analyze:
 ```{{text}}```
@@ -420,27 +422,30 @@ Guidelines:
 - Highlight cross-cutting trends that appear in multiple sources
 - Use **bold** for emphasis on key terms and important points
 - Write the entire output in {target_lang}
+- Do not output English section headers or fixed labels such as "Daily News Digest", "Executive Summary", "Key Events", "Market & Industry Trends", "Notable Developments", or "What to Watch". Localize all such headings naturally into {target_lang}.
+- Unless a term is a proper noun, product name, company name, paper title, ticker, or direct quote, translate it into {target_lang}.
+- If {target_lang} is Chinese, all analytical commentary, key insights, and watch items must be written in Chinese.
 
-Output Format (use Markdown):
+Output Format (use Markdown, with headings written in natural {target_lang}):
 
-## Daily News Digest
+## 每日新闻速报
 
-**Executive Summary:** [2-3 sentences highlighting the most important developments of the day]
+**核心摘要：** [2-3 句，概括当天最重要的变化]
 
-### Key Events
-[Significant announcements, product launches, breaking news - bullet points]
+### 关键事件
+[重要公告、产品发布、突发新闻 - 项目符号]
 
-### Market & Industry Trends
-[Patterns, market movements, emerging trends - bullet points]
+### 市场与行业趋势
+[模式、市场变化、新兴趋势 - 项目符号]
 
-### Notable Developments
-[Interesting insights, research findings, things worth watching - bullet points]
+### 值得关注的进展
+[重要洞察、研究发现、值得持续观察的事项 - 项目符号]
 
-### What to Watch
-[2-3 specific action items or things to monitor going forward]
+### 后续关注
+[2-3 个后续要跟进的具体方向]
 
 ---
-*Sources: {{source_count}} articles from {{source_names}}*
+*来源：{{source_count}} 篇文章，来自 {{source_names}}*
 
 Content to analyze:
 {{content}}
