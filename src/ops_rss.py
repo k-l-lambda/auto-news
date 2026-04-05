@@ -325,16 +325,27 @@ class OperatorRSS(WebCollectorBase):
         print(f"Summary max length: {SUMMARY_MAX_LENGTH}")
         print(f"Translation language: {TRANSLATION_LANG}")
 
-        llm_agent = LLMAgentSummary()
-        llm_agent.init_prompt()
-        llm_agent.init_llm()
+        llm_agent = None
+        llm_summary_available = False
+        try:
+            llm_agent = LLMAgentSummary()
+            llm_agent.init_prompt()
+            llm_agent.init_llm()
+            llm_summary_available = True
+        except Exception as e:
+            print(f"[WARN] RSS summary LLM init failed, will degrade gracefully: {e}")
+            traceback.print_exc()
 
         # Initialize title agent if translation is enabled
         title_agent = None
-        if TRANSLATION_LANG:
-            title_agent = LLMAgentTitle()
-            title_agent.init_prompt()
-            title_agent.init_llm()
+        if TRANSLATION_LANG and llm_summary_available:
+            try:
+                title_agent = LLMAgentTitle()
+                title_agent.init_prompt()
+                title_agent.init_llm()
+            except Exception as e:
+                print(f"[WARN] RSS title LLM init failed, fallback to original title: {e}")
+                traceback.print_exc()
 
         client = DBClient()
         redis_key_expire_time = os.getenv(
@@ -375,14 +386,22 @@ class OperatorRSS(WebCollectorBase):
                         continue
 
                 content = content[:SUMMARY_MAX_LENGTH]
-                # Prepend source name for LLM to include in summary
-                content_with_source = f"[Source: {list_name}]\n\n{content}"
-                summary = llm_agent.run(content_with_source)
-
-                print(f"Cache llm response for {redis_key_expire_time}s, page_id: {page_id}, summary: {summary}")
-                client.set_notion_summary_item_id(
-                    "rss", list_name, page_id, summary,
-                    expired_time=int(redis_key_expire_time))
+                if llm_summary_available and llm_agent:
+                    try:
+                        # Prepend source name for LLM to include in summary
+                        content_with_source = f"[Source: {list_name}]\n\n{content}"
+                        summary = llm_agent.run(content_with_source)
+                        print(f"Cache llm response for {redis_key_expire_time}s, page_id: {page_id}, summary: {summary}")
+                        client.set_notion_summary_item_id(
+                            "rss", list_name, page_id, summary,
+                            expired_time=int(redis_key_expire_time))
+                    except Exception as e:
+                        print(f"[WARN] RSS LLM summary failed, fallback to raw content excerpt: {e}")
+                        traceback.print_exc()
+                        summary = content[:4000]
+                else:
+                    summary = content[:4000]
+                    print(f"[WARN] RSS LLM unavailable, using raw content excerpt fallback for page_id: {page_id}")
 
             else:
                 print("Found llm summary from cache, decoding (utf-8) ...")
@@ -396,14 +415,19 @@ class OperatorRSS(WebCollectorBase):
                     "rss", list_name, title_cache_key)
 
                 if not cached_title:
-                    # Use summary or content for title generation
-                    title_input = summary if summary else content[:2000]
-                    localized_title = title_agent.run(title_input)
-                    print(f"Generated localized title: {localized_title}")
+                    try:
+                        # Use summary or content for title generation
+                        title_input = summary if summary else content[:2000]
+                        localized_title = title_agent.run(title_input)
+                        print(f"Generated localized title: {localized_title}")
 
-                    client.set_notion_summary_item_id(
-                        "rss", list_name, title_cache_key, localized_title,
-                        expired_time=int(redis_key_expire_time))
+                        client.set_notion_summary_item_id(
+                            "rss", list_name, title_cache_key, localized_title,
+                            expired_time=int(redis_key_expire_time))
+                    except Exception as e:
+                        print(f"[WARN] RSS localized title generation failed, fallback to original title: {e}")
+                        traceback.print_exc()
+                        localized_title = title
                 else:
                     localized_title = utils.bytes2str(cached_title)
                     print(f"Found cached localized title: {localized_title}")
